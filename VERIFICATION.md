@@ -36,12 +36,13 @@ This document records what was verified, by whom, and when.
 | A1 seed=7 (Phase 9.2) | ✅ Verified | Self-run on Vast.ai 2026-05-08 |
 | A2 multi-seed (42, 123, 7) | ✅ Verified | Self-run Vast.ai 2026-05-08 |
 | A3 multi-seed (42, 123, 7) | ✅ Verified | Self-run Vast.ai 2026-05-09/10 |
-| A4 ablation (seed 42) | ✅ Verified single-seed | Self-run Vast.ai 2026-05-10 |
-| A4 ablation (seeds 123, 7) | 🟡 In progress | Self-run Vast.ai 2026-05-15 (W1.9) |
-| W1.7 AMC23 maj@4 re-eval (post-fix) | 🟡 In progress | Self-run Vast.ai 2026-05-15 |
+| A4 ablation (seed 42, EN benchmarks) | ✅ Verified | Self-run Vast.ai 2026-05-10 |
+| A4 ablation (seeds 123, 7, EN benchmarks) | ✅ Verified | Self-run 2026-05-15; raw JSONs at `results/eval/a4_const_bias_{123,7}_step50/`; values incorporated in `paper/tables/table_main.tex` as three-seed mean±std |
+| A4 ablation MGSM (seed 42 only) | ✅ Verified single-seed | `results/eval/a4_const_bias_42_mgsm/`; seeds 123/7 for MGSM not run (disclosed in `paper/tables/table_mgsm.tex` caption) |
+| W1.7 AMC23 maj@4 re-eval (post-fix) | ✅ Verified | Re-eval at `results/eval/w17_*` and `results/eval/base_distill/`; Base AMC-23 maj@4 = 70.0% used in `paper/tables/table_main.tex` |
 | W1.8 eval-gap diagnosis (Open-RS2 public) | ✅ Verified | Self-run Vast.ai 2026-05-15. Result: pipeline reproduces Open-RS within 5pp on maj@4. Pipeline is sound. |
-| MGSM multilingual eval (single-seed) | ✅ Verified | Phase 9.4 |
-| MGSM multilingual eval (multi-seed) | ⏳ Optional | Acknowledged in Limitations |
+| MGSM multilingual eval — A1, A2, A3 (two seeds: 123, 7) | ✅ Verified | `results/eval/{a1,a2,a3}_*_mgsm/`; seed 42 for MGSM not run (disclosed in `paper/tables/table_mgsm.tex` caption) |
+| MGSM multilingual eval — three-seed | ⏳ Optional | Acknowledged in Limitations |
 
 ### Citations and prior art
 
@@ -61,9 +62,9 @@ This document records what was verified, by whom, and when.
 |---|---|---|
 | Abstract | ✅ Verified | Numbers cross-checked against `results/eval/*.json` |
 | Methods (§3) | ✅ Verified | Hyperparameters cross-checked against `configs/*.yaml` |
-| Results (§4) | 🟡 Partial | Phase 8 single-seed numbers verified; multi-seed pending |
-| Mechanism hypothesis (§7) | 🟡 Speculative | Marked as hypothesis pending A4 ablation |
-| Limitations (§8) | ✅ Verified | Author identified each limitation explicitly |
+| Results (§4) | ✅ Verified | Multi-seed numbers in `paper/tables/table_main.tex` cross-checked against `results/eval/*/*_step50_*.json`; A4 three-seed EN means/σ recomputed from raw seed-42/123/7 JSONs |
+| Mechanism hypothesis (§7) | ✅ Verified as hypothesis | A4 ablation three-seed on EN benchmarks; A3 − A4 = +5.58pp CI verified from raw JSONs |
+| Limitations (§8) | ✅ Verified | Author identified each limitation explicitly; A4 MGSM single-seed and MGSM two-seed restrictions disclosed in respective table captions |
 
 ## AI assistance scope
 
@@ -92,7 +93,9 @@ This file is updated whenever:
 - A new code component is introduced
 - A claim previously marked Pending is verified
 
-Last updated: 2026-05-09 (Phase 9.2 in progress).
+Last updated: 2026-05-26 (post-submission audit; A4 three-seed EN
+ablation aggregated into `results/master.csv` from existing per-seed JSONs;
+no new training runs).
 
 ## Pipeline run @ 2026-05-09 04:19:50 UTC
 
