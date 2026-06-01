@@ -14,7 +14,7 @@ fi
 # Run vLLM-based eval
 python src/eval/runner.py \
     --checkpoint "${CKPT}" \
-    --benchmarks gsm8k math500 aime2024 mgsm msvamp \
+    --benchmarks gsm8k math500 aime2024 amc23 mgsm msvamp math500_vi_hand \
     --config configs/eval.yaml \
     --output_dir results/eval/
 

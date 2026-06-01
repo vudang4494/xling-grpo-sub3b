@@ -110,10 +110,15 @@ bash scripts/train_a2_a3.sh a2                   # A2: Vietnamese-translated
 bash scripts/train_a2_a3.sh a3                   # A3: English + R5
 bash scripts/w19_train_a4_multiseed.sh           # A4: constant-bias, 3 seeds
 
-# 4. Evaluate on AMC-23 / MATH-500 / AIME-2024 / MGSM
-bash scripts/eval_all.sh
+# 4. Evaluate on all benchmarks
+python src/eval/runner.py \
+    --checkpoint results/grpo/qwen15b_en_42/checkpoint-500 \
+    --benchmarks gsm8k math500 aime2024 amc23 mgsm msvamp \
+    --config configs/eval.yaml \
+    --output_dir results/eval/
 
-# 5. Build the paper PDF
+# 5. Aggregate results into master CSV
+python src/analysis/aggregate.py --output results/master.csv
 brew install tectonic                            # macOS, one-time
 cd paper && tectonic -X compile main.tex
 ```
@@ -128,15 +133,15 @@ plus ≈ 4 A100-hours of evaluation across the full benchmark suite.
 | **GPU** | 1× NVIDIA A100-SXM4-80 GB | 1× ≥ 40 GB VRAM with FlashAttention 2 |
 | **CPU RAM** | 64 GB | 32 GB |
 | **Disk** | ~ 80 GB | 40 GB (model + adapters + eval JSONs) |
-| **Python** | 3.12.3 | 3.11 |
+| **Python** | 3.11 | 3.11 |
 
 Tested with the pinned dependencies in [`pyproject.toml`](pyproject.toml):
 
 ```text
-torch==2.5.1+cu124   transformers==4.49.0   trl==0.15.2
-vllm==0.7.2          accelerate==1.2.1      peft==0.14.0
-datasets==4.8.5      flash_attn==2.7.2.post1
-sympy==1.13.1        math_verify==0.9.0     fasttext-wheel==0.9.2
+torch==2.4.1      transformers==4.46.3    trl>=0.15.0,<0.16.0
+vllm==0.7.2       accelerate==1.2.1       peft==0.14.0
+datasets>=2.21.0  sympy>=1.13,<2.0       math-verify>=0.5.0
+fasttext-wheel>=0.9.2
 ```
 
 ## Repository layout
@@ -162,7 +167,7 @@ xling-grpo-sub3b/
 ├── results/               — eval JSONs (in git) and LoRA adapters (local-only)
 ├── scripts/               — training, evaluation, and integrity pipelines
 ├── src/
-│   ├── rewards/           — R1 (correctness), R2 (format), R5 (lang), R_const
+│   ├── rewards/           — R1 (correctness), R2 (format), R3 (length), R4 (tag), R5 (lang), R_const
 │   ├── trainers/          — TRL 0.15 GRPO + LoRA wrappers
 │   ├── eval/              — vLLM eval adapters (AMC-23, MATH-500, AIME-2024, MGSM)
 │   └── analysis/          — aggregate.py, bootstrap.py, plot_curves.py
@@ -177,7 +182,9 @@ See [`docs/README.md`](docs/README.md) for the full documentation index.
 |---|---|---|
 | **R1** — correctness | Indicator of [Math-Verify](https://github.com/huggingface/Math-Verify) equivalence between the extracted answer and the gold. Extraction priority: `<answer>` tag → `\boxed{}` → last-number fallback. | All arms |
 | **R2** — format | Indicator that the completion matches a regex requiring both `<think>...</think>` and `<answer>...</answer>` blocks (in order). | All arms |
-| **R5** — language consistency | Indicator that fastText `lid.176.bin` predicts the same language for the prompt and the completion (guard: completions shorter than 10 tokens score 0). Fires on every prompt (`no_penalty_for_en=False`). | A3 only |
+| **R3** — length cosine | DAPO-style cosine schedule over whitespace-token length in `[32, 3584]`. Reward peaks at the midpoint and decays toward the boundaries. Discourages both under- and over-explaining. | All arms |
+| **R4** — tag count | Sub-reward: each of the 4 required tags (`<think>`, `</think>`, `<answer>`, `</answer>`) appearing exactly once contributes 0.25. Enables partial credit on format violations. | All arms |
+| **R5** — language consistency | Indicator that fastText `lid.176.bin` predicts the same language for the prompt and the completion (guard: completions shorter than 10 tokens score 0). For Cond C: fires on every prompt with `no_penalty_for_en=False` — English prompts return 0 (no penalty), non-English prompts penalize code-switching. | A3 only |
 | **R<sub>const</sub>** | Deterministic constant reward of 1.0 on every input. Used to test the reward-magnitude hypothesis. | A4 only |
 
 ## Evaluation protocol

@@ -23,7 +23,7 @@ from typing import Any
 # Run ID patterns. Tolerates suffix `_step{N}` for step-specific eval runs.
 RUN_ID_PATTERN = re.compile(
     r"^(?P<model>qwen15b|qwen3b|llama3b|deepseek_r1_distill_15b)"
-    r"_(?P<condition>en|vi|enlang|baseline)"
+    r"_(?P<condition>en|vi|enlang|const_bias|baseline)"
     r"_(?P<seed>\d+)(?:_step\d+)?$"
 )
 REPRODUCE_PATTERN = re.compile(
