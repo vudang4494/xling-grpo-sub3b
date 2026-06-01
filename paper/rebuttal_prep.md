@@ -142,7 +142,7 @@ We identified **two independent bugs** in the eval pipeline — neither requires
 **Findings:**
 1. **Pass@1 exactly reproduces paper** (A1 56.7$\pm$11.3, A2 56.7$\pm$5.2, A3 57.5$\pm$6.6) — Bug 2 (`.strip()`) was already partially in effect for seeds 123/7; only seed 42 of A1 was significantly affected (35→57.5%), and the paper used the post-strip `ckpt50_v3` re-eval for that cell.
 2. **maj@4 mean drops 5–7pp** vs the 2-seed pre-publish numbers, because adding seed 42 (which had m@4=0 pre-fix) pulls down. A1/A2/A3 m@4 are now $70.0\pm4.3$, $70.0\pm2.5$, $68.3\pm3.8$ — tighter and more consistent than the previously-reported $76.2\pm1.8$, $77.5\pm3.5$, $65.0\pm7.1$ (which were 2-seed only).
-3. **All 3 LoRA arms converge to maj@4 $\approx 68$-$70$%** — about $5$pp above base ($70.0$%). The training-language axis (A1 vs A2) and language-consistency reward (A3) do NOT separate on AMC-23 maj@4; differentiation appears only on AIME-2024 maj@8 (where A3 has $+4.4$pp lift over base, see Table~\ref{tab:delta_v2}).
+3. **All 3 LoRA arms converge to maj@4 $\approx 68$-$70$%** — about $5$pp above base ($70.0$%). The training-language axis (A1 vs A2) and language-consistency reward (A3) do NOT separate on AMC-23 maj@4; differentiation appears only on AIME-2024 maj@8 (where A3 has $+4.5$pp lift over base, see Table~\ref{tab:delta_v2}).
 
 The updated AMC-23 maj@4 column replaces the pre-fix `0.0` values in Table~\ref{tab:main_v2} of the revised manuscript. All 123 unit tests pass with the fixes applied.
 
@@ -171,10 +171,10 @@ We agree that a single-seed ablation is preliminary. We have addressed this by r
 
 | Comparison | Mean $\Delta$ (pp) | 95% CI | Excludes 0? |
 |---|---|---|---|
-| **A3 − A4 on AIME-2024 m@8** | **+5.58** | **[+1.13, +11.10]** | **YES — SIGNIFICANT** ⭐ |
+| **A3 − A4 on AIME-2024 m@8** | **+5.6** | **[+1.1, +11.1]** | **YES — SIGNIFICANT** ⭐ |
 | A4 − Base on AIME-2024 m@8 | −1.08 | wide (σ=5.07) | NO (CI straddles 0) |
 
-**Revised interpretation:** With three seeds confirmed, A3 (training language + R5 language-consistency reward) provides a **statistically significant** +5.58 pp advantage over A4 (training language + constant-bias control) on AIME-2024 majority-vote-at-8. The 95% bootstrap CI [+1.13, +11.10] excludes 0. A4 itself is **not distinguishable from base** ($\Delta = -1.08 \pm 5.07$ pp; CI bao 0).
+**Revised interpretation:** With three seeds confirmed, A3 (training language + R5 language-consistency reward) provides a **statistically significant** +5.6 pp advantage over A4 (training language + constant-bias control) on AIME-2024 majority-vote-at-8. The 95% bootstrap CI [+1.1, +11.1] excludes 0. A4 itself is **not distinguishable from base** ($\Delta = -1.08 \pm 5.07$ pp; CI bao 0).
 
 **Conclusion:** The mechanism behind A3's improvement is **content-specific, not reward-magnitude based**. The constant-bias control (which provides the same reward-shape perturbation but no language signal) cannot reproduce A3's effect. Paper's original claim is **strengthened, not weakened**, by multi-seed ablation.
 
@@ -185,7 +185,7 @@ The updated A4 row replaces the single-seed entry in Table~\ref{tab:main_v2} of 
 ## SECTION 5: Statistical Significance — AIME-2024 maj@8 Claim (Issue #5)
 
 **Reviewer comment** *(anticipated):*
-> "The paper claims A3 achieves +4.4pp over the base on AIME-2024 maj@8. Is this improvement statistically significant? With only three seeds, the standard deviation is 1.9pp, but no formal hypothesis test or confidence interval is provided."
+> "The paper claims A3 achieves +4.5pp over the base on AIME-2024 maj@8. Is this improvement statistically significant? With only three seeds, the standard deviation is 1.9pp, but no formal hypothesis test or confidence interval is provided."
 
 **Response:**
 
@@ -195,17 +195,17 @@ We thank the reviewer for raising this important point. We now provide bootstrap
 
 | Comparison | Mean $\Delta$ (pp) | Bootstrap 95% CI | Significant? |
 |---|---|---|---|
-| A3 $-$ Base | **+4.4** | **[+3.3, +6.7]** | **YES** ✓ (95% CI excludes 0) |
+| A3 $-$ Base | **+4.5** | **[+3.3, +6.7]** | **YES** ✓ (95% CI excludes 0) |
 | A2 $-$ Base | +1.1 | [+0.0, +3.3] | borderline (CI touches 0) |
 | A1 $-$ Base | $-$5.6 | [$-$16.7, +6.7] | NO (CI straddles 0, wide variance) |
 
-A3 vs Base on AIME-2024 maj@8 is the only comparison with the 95\% CI strictly excluding 0. With three seeds, bootstrap on seed-level means is conservative (small-n correction); the +4.4 pp lift is statistically distinguishable from zero at the 5\% level under this conservative procedure.
+A3 vs Base on AIME-2024 maj@8 is the only comparison with the 95\% CI strictly excluding 0. With three seeds, bootstrap on seed-level means is conservative (small-n correction); the +4.5 pp lift is statistically distinguishable from zero at the 5\% level under this conservative procedure.
 
 A3 vs A4 comparison pending W1.9 multi-seed A4 (will fill once A4 seeds 123, 7 complete training and eval).
 
 **Interpretation:**
 
-- If the 95% CI for A3 $-$ Base does not include 0: the +4.4pp improvement over base on AIME-2024 maj@8 is statistically significant at the 5% level.
+- If the 95% CI for A3 $-$ Base does not include 0: the +4.5pp improvement over base on AIME-2024 maj@8 is statistically significant at the 5% level.
 - If the 95% CI for A3 $-$ A4 does not include 0: the language-consistency mechanism is statistically distinguishable from a constant-bias perturbation.
 
 The bootstrap CI code is in `src/analysis/bootstrap.py`. The revised manuscript will include a new appendix section "Statistical Methods" describing the bootstrap procedure and a footnote on each table reporting the 95% CI alongside the mean $\pm\sigma$.

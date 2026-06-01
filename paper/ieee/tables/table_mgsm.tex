@@ -1,17 +1,22 @@
 \begin{table*}[t]
 \centering\small
 \caption{MGSM multilingual evaluation (\texttt{pass@1}, 250 problems per
-language). The \base{} and \armD{} rows are single-seed (\texttt{42});
-\armA{}, \armB{}, \armC{} are the mean of two seeds (\texttt{123, 7}).}
+language).
+Seed coverage: \base{} and \armD{} use a single seed (\texttt{42});
+\armA{}, \armB{}, \armC{} use the mean of two seeds
+(\texttt{123} and \texttt{7}).
+No standard deviation is reported because each arm's MGSM result is a
+single mean across languages; see Table~\ref{tab:mgsm_detail}
+for per-seed breakdowns.}
 \label{tab:mgsm}
 \begin{tabular}{lccccccccccc}
 \toprule
-Arm & \textsc{en} & \textsc{es} & \textsc{fr} & \textsc{de} & \textsc{ru} & \textsc{zh} & \textsc{ja} & \textsc{th} & \textsc{sw} & \textsc{bn} & Mean \\
+Arm & \textit{en} & \textit{es} & \textit{fr} & \textit{de} & \textit{ru} & \textit{zh} & \textit{ja} & \textit{th} & \textit{sw} & \textit{bn} & Mean \\
 \midrule
 \base{} & 80.4 & 65.6 & 61.2 & 57.2 & 58.8 & 68.8 & 37.2 & 23.6 & 2.4 & 18.0 & 47.3 \\
-\armA{} & 80.6 & 63.6 & 62.4 & 56.2 & 59.2 & 67.6 & 36.8 & 23.4 & 2.2 & 20.4 & 47.2 \\
-\armB{} & 80.2 & 66.4 & 61.0 & 54.4 & 59.4 & 68.0 & 36.4 & 22.4 & 2.2 & 18.8 & 46.9 \\
-\armC{} & 81.0 & 64.0 & 60.2 & 56.0 & 56.4 & 69.0 & 35.2 & 24.0 & 3.0 & 19.0 & 46.8 \\
+\armA{} & 80.0 & 60.4 & 62.0 & 56.0 & 59.2 & 66.0 & 37.2 & 22.4 & 1.2 & 21.6 & 46.6 \\
+\armB{} & 81.2 & 65.2 & 60.0 & 55.2 & 60.0 & 70.4 & 37.6 & 22.4 & 3.2 & 18.4 & 47.4 \\
+\armC{} & 80.0 & 64.4 & 59.6 & 54.8 & 54.8 & 69.2 & 34.8 & 23.6 & 2.4 & 20.4 & 46.4 \\
 \armD{} & 82.4 & 64.8 & 64.4 & 55.6 & 58.8 & 68.8 & 34.8 & 23.6 & 3.2 & 18.4 & 47.5 \\
 \bottomrule
 \end{tabular}

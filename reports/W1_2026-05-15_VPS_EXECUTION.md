@@ -20,7 +20,7 @@
 | transformers | 4.57.6 | _pending_ | ⏳ |
 | trl | 0.15.2 | _pending_ | ⏳ |
 | flash_attn | 2.7.2.post1 | _pending_ | ⏳ |
-| sympy | 1.13.1 | _pending_ | ⏳ |
+| sympy | 1.1.1 | _pending_ | ⏳ |
 | math_verify | 0.9.0 | _pending_ | ⏳ |
 | HF_HOME | /workspace/.hf_home | /workspace/.hf_home | ✅ |
 
@@ -94,7 +94,7 @@
 
 | Comparison | Mean Δ (pp) | 95% CI | Significant? |
 |---|---|---|---|
-| A3 − Base on AIME-2024 m@8 | +4.4 | _pending_ | _pending_ |
+| A3 − Base on AIME-2024 m@8 | +4.5 | _pending_ | _pending_ |
 | A2 − Base on AIME-2024 m@8 | +1.1 | _pending_ | _pending_ |
 | A1 − Base on AIME-2024 m@8 | −1.1 | _pending_ | _pending_ |
 | A3 − A4 on AIME-2024 m@8 | _pending_ | _pending_ | _pending_ |

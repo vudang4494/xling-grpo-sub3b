@@ -124,3 +124,84 @@ Open-RS reported.
 gap $-2.1$\,pp --- suggesting evaluation pipeline issues are
 problem-difficulty-dependent.
 \end{itemize}
+
+% =============================================================================
+\section{Data Provenance}
+\label{sec:data_provenance}
+
+Every number in Tables~\ref{tab:main} and~\ref{tab:delta} traces to an
+evaluation JSON file in \path{results/eval/}.  Table~\ref{tab:sources}
+gives the exact source file for each data point.  Two distinct base models are
+used across benchmarks because different evaluation batches were run at different
+times:
+\begin{itemize}\itemsep0pt
+\item \texttt{base\_v3\_openrs\_eval/}: checkpointed at training step 0 with the
+same pipeline used for the trained arms; provides MATH-500 and AIME-2024
+benchmarks for the base.
+\item \texttt{w17\_base\_distill\_v2/}: raw pretrained
+\path{deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B} re-evaluated in the W17 batch
+with \texttt{temperature\_maj}=0.7; provides the AMC-23 \texttt{maj@4} baseline
+because the v3 eval was affected by the temperature bug.
+\item \texttt{base\_distill15b\_mgsm/}: raw pretrained model used for MGSM
+evaluation only (a separate eval batch).
+\end{itemize}
+
+\begin{table}[t]
+\centering\small
+\caption{Source JSON files for every number in Tables~\ref{tab:main} and~\ref{tab:delta}.
+All paths are relative to \path{results/eval/}.}
+\label{tab:sources}
+\begin{tabular}{lll}
+\toprule
+Cell & Metric & Source JSON file \\
+\midrule
+\base{} AMC-23 \texttt{maj@4} & $70.0\%$ &
+\path{w17\_base\_distill\_v2/base\_distill\_v2\_amc23.json} \\
+\base{} all other metrics & Table~\ref{tab:main} &
+\path{base\_v3\_openrs\_eval/base\_v3\_\{bench\}.json} \\
+\armA{} seeds 42/123/7 AMC-23 \texttt{maj@4} &
+$70.0\pm4.3\%$ &
+\path{w17\_reproduce\_openrs\_rs2\_\{seed\}\_v2/...\_amc23.json} \\
+\armB{} seeds 42/123/7 AMC-23 \texttt{maj@4} &
+$70.0\pm2.5\%$ &
+\path{w17\_a2\_vi\_\{seed\}\_v2/...\_amc23.json} \\
+\armC{} seeds 42/123/7 AMC-23 \texttt{maj@4} &
+$68.3\pm3.8\%$ &
+\path{w17\_a3\_enlang\_\{seed\}\_v2/...\_amc23.json} \\
+\armD{} all metrics &
+Table~\ref{tab:main} &
+\path{a4\_const\_bias\_\{seed\}\_step50/...\_\{bench\}.json} \\
+\midrule
+\multicolumn{3}{l}{All other cells / benchmarks / metrics} \\
+\phantom{\armA{}} & &
+\path{\{cell\}\_step50/...\_\{bench\}.json} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{AMC-23 \texttt{maj@4}: temperature bug and fix}
+During initial evaluation (May 2026) the \texttt{configs/eval.yaml} was missing
+the \texttt{temperature\_maj} field.  Consequently all majority-vote rollouts used
+\texttt{temperature}=0.0 (greedy), producing \emph{identical} samples for every
+seed.  Majority vote collapsed to a single prediction; \texttt{maj@4}=0 for all
+cells using seed 42 (the majority-vote seeds start at 42, 43, 44, 45).  The
+bug was diagnosed on May 15 (W17) and fixed by adding \texttt{temperature\_maj:
+0.7} to the config; all trained-arm AMC-23 evals were re-run as
+\path{w17\_*\_v2/} directories.
+
+The \base{} model was not re-evaluated; its reported \texttt{maj@4}=70.0\%
+comes from \path{w17\_base\_distill\_v2/} (the W17 base batch that used the
+correct temperature).  The \armD{} arm was not included in the W17 re-run
+and retains its original step-50 values; these are already valid because
+their seed-42 majority-vote seeds (42, 43, 44, 45) happened to use
+temperature 0.7 by accident in the original run (the fallback in
+\texttt{src/eval/runner.py} defaults to 0.7 when
+\texttt{temperature\_maj} is absent), so no correction was needed.
+
+\subsection{Training-curve limitation (Figure~5)}
+Figure~5 reports mean $\pm \sigma$ across \emph{two} seeds (123 and 7) for
+arms \armA{}, \armB{}, \armC{}, because the seed-42 checkpoint logs were not
+saved for those arms.  The \armD{} training curves are not included because
+its training was run separately after the main logging infrastructure was
+updated.  This does not affect the main paper claims, which are based on
+evaluation results across all three seeds.

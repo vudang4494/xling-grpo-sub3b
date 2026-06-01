@@ -97,7 +97,7 @@ AMC-23, MATH-500, AIME-2024, and 10-language MGSM.
 \noindent\textbf{Results.} We report three orthogonal findings.
 \textbf{(i) Positive:} on AIME-2024 maj@8, the hardest benchmark in our
 suite, \armC{} achieves the highest mean accuracy ($37.8 \pm 1.9$\%) and the
-only positive effect over the untrained base ($+4.4$\,pp), robust across
+only positive effect over the untrained base ($+4.5$\,pp), robust across
 three seeds. \textbf{(ii) Methodological:} \armA{} exhibits
 $\sigma = 11.3$\,pp seed variance on AMC-23 and consistently degrades
 AIME-2024 pass@1 (mean $-12.2$\,pp across 3/3 seeds), confirming that
@@ -106,8 +106,8 @@ single-seed claims at sub-3B + LoRA scale are unreliable.
 training conditions converge to within $\pm 0.5$\,pp of the untrained base
 mean, indicating that training-language choice does not produce cross-lingual
 transfer at this scale. The three-seed \armD{} ablation \emph{fails to}
-reproduce \armC{}'s effect on AIME-2024 maj@8 ($\armC{}-\armD{} = +5.58$\,pp,
-$95\%$ bootstrap CI $[+1.13, +11.10]$, excluding $0$), refuting a pure
+reproduce \armC{}'s effect on AIME-2024 maj@8 ($\armC{}-\armD{} = +5.6$\,pp,
+$95\%$ bootstrap CI $[+1.1, +11.1]$, excluding $0$), refuting a pure
 reward-magnitude interpretation.
 
 \noindent\textbf{Conclusion.} The auxiliary language-consistency reward
@@ -179,13 +179,13 @@ single-seed GRPO results at sub-3\,B + LoRA scale are unreliable: vanilla
 English GRPO exhibits $\sigma{=}11.3$\,pp variance on AMC-23
 (Section~\ref{sec:finding1}).
 \item Documentation of \armC{}'s positive effect on the hardest benchmark
-in our suite: $+4.4 \pm 1.9$\,pp on AIME-2024 \texttt{maj@8} over the
+in our suite: $+4.5 \pm 1.9$\,pp on AIME-2024 \texttt{maj@8} over the
 untrained base, robust across three seeds
 (Section~\ref{sec:finding3}).
 \item A three-seed constant-bias ablation \armD{} that \emph{fails} to
 reproduce \armC{}'s AIME-2024 \texttt{maj@8} result
-($\armC{}{-}\armD{}{=}{+}5.58$\,pp, $95\%$ bootstrap CI
-$[+1.13, +11.10]$, excluding $0$), demonstrating that $\R{5}$'s
+($\armC{}{-}\armD{}{=}{+}5.6$\,pp, $95\%$ bootstrap CI
+$[+1.1, +11.1]$, excluding $0$), demonstrating that $\R{5}$'s
 contribution is content-specific rather than a pure reward-magnitude
 perturbation (Section~\ref{sec:mechanism}).
 \item A 10-language MGSM evaluation showing that the GRPO recipe at this
@@ -198,15 +198,15 @@ regardless of training-language choice
 \textbf{Main empirical claim.} Multi-seed evaluation reveals three
 orthogonal patterns. \textbf{(i)}~The language-consistency reward arm
 \armC{} achieves the highest mean AIME-2024 \texttt{maj@8}
-($+4.4 \pm 1.9$\,pp over base across three seeds). \textbf{(ii)}~Vanilla
+($+4.5 \pm 1.9$\,pp over base across three seeds). \textbf{(ii)}~Vanilla
 English GRPO \armA{} exhibits $\sigma{=}11.3$\,pp seed variance on
 AMC-23 and consistently degrades AIME-2024 \texttt{pass@1} by
 $-12.2 \pm 7.7$\,pp. \textbf{(iii)}~On 10-language MGSM, all training
 conditions converge to within $\pm 0.5$\,pp of the untrained base. A
 three-seed constant-bias control \armD{} \emph{fails} to reproduce
 \armC{}'s effect on AIME-2024 \texttt{maj@8}
-($\armC{}{-}\armD{}{=}{+}5.58$\,pp, $95\%$ bootstrap CI
-$[+1.13, +11.10]$), refuting a pure reward-magnitude explanation.
+($\armC{}{-}\armD{}{=}{+}5.6$\,pp, $95\%$ bootstrap CI
+$[+1.1, +11.1]$), refuting a pure reward-magnitude explanation.
 }
 
 \subsection{Article structure}
@@ -455,7 +455,7 @@ across the three seeds (Tables~\ref{tab:main} and~\ref{tab:delta}).
 For the headline AIME-2024 maj@8 comparisons, we additionally report
 $95\%$ subject-bootstrap confidence intervals over seed-level means
 ($n{=}10{,}000$ resamples, fixed RNG seed): \armC{}$-\base{}$ has
-CI $[+3.3, +6.7]$ and \armC{}$-\armD{}$ has CI $[+1.13, +11.10]$, both
+CI $[+3.3, +6.7]$ and \armC{}$-\armD{}$ has CI $[+1.1, +11.1]$, both
 excluding $0$ at the $5\%$ level. Bootstrap implementation is in
 \path{scripts/w110_bootstrap_ci.py} and \path{scripts/w21_verify_paper_claims.py};
 the verification script re-derives every numerical claim in the manuscript
@@ -546,7 +546,7 @@ that shrink the policy-update variance across seeds.
   large AIME-2024 \texttt{pass@1} loss ($-12.2\pm 7.7$\,pp); \armC{}'s
   addition of $\R{5}$ narrows that loss ($-5.6\pm 1.9$\,pp) and is the
   only arm with a positive $\Delta$ on AIME-2024 \texttt{maj@8}
-  ($+4.4\pm 1.9$\,pp).}
+  ($+4.5\pm 1.9$\,pp).}
   \label{fig:effect_sizes}
 \end{figure}
 
@@ -556,7 +556,7 @@ that shrink the policy-update variance across seeds.
 \armC{} adds $\R{5}$ to the same English training data as \armA{}, with
 no other change. Across three seeds, \armC{} achieves the highest mean
 AIME-2024 \texttt{maj@8} ($37.8 \pm 1.9$\,\%) and is the only arm with a
-positive $\Delta$ over the untrained base ($+4.4$\,pp;
+positive $\Delta$ over the untrained base ($+4.5$\,pp;
 Fig.~\ref{fig:effect_sizes}). The effect is robust: all three seeds
 produce $36.7$\,\% or higher.
 
@@ -579,7 +579,7 @@ via the constant-bias ablation \armD{} (Section~\ref{sec:mechanism}).
 Both \armB{} (different training distribution) and \armC{} (auxiliary
 reward component) reduce seed variance relative to \armA{} on every
 metric, while \armC{} additionally produces the only positive
-$\Delta$ over base on AIME-2024 \texttt{maj@8} ($+4.4 \pm 1.9$\,pp).
+$\Delta$ over base on AIME-2024 \texttt{maj@8} ($+4.5 \pm 1.9$\,pp).
 The two interventions act through different proximal mechanisms --
 distribution shift in \armB{}, an auxiliary reward in \armC{} -- but
 converge to the same qualitative effect: \emph{improved
@@ -650,7 +650,7 @@ should reproduce \armC{}'s regularization signature on AIME-2024
 $=70.0\pm 2.5$\,\%, MATH-500 $=61.2\pm 0.9$\,\%, AIME-2024
 \texttt{pass@1} $=24.4\pm 1.9$\,\%, and AIME-2024 \texttt{maj@8}
 $=32.2\pm 5.1$\,\% (below \armC{}'s $37.8\pm 1.9$\,\%;
-$\armC{}-\armD{} = +5.58$\,pp, $95\%$ bootstrap CI $[+1.13, +11.10]$
+$\armC{}-\armD{} = +5.6$\,pp, $95\%$ bootstrap CI $[+1.1, +11.1]$
 excluding $0$ over $10{,}000$ subject-bootstrap resamples). \armD{}
 itself is not distinguishable from base on AIME-2024 \texttt{maj@8}
 ($\Delta=-1.08\pm 5.07$\,pp; CI includes $0$).
@@ -682,9 +682,9 @@ regularizer.
 \textbf{Three-seed sample (all four arms).} Each of \armA{}, \armB{},
 \armC{}, and the constant-bias ablation \armD{} reports three random seeds
 (\texttt{42, 123, 7}). The headline \armC{} effect on AIME-2024 maj@8
-($+4.4\pm 1.9$\,pp over base; $95\%$ bootstrap CI $[+3.3, +6.7]$) and the
-\armC{}-vs-\armD{} contrast ($+5.58$\,pp, $95\%$ bootstrap CI
-$[+1.13, +11.10]$) are both statistically distinguishable from zero under
+($+4.5\pm 1.9$\,pp over base; $95\%$ bootstrap CI $[+3.3, +6.7]$) and the
+\armC{}-vs-\armD{} contrast ($+5.6$\,pp, $95\%$ bootstrap CI
+$[+1.1, +11.1]$) are both statistically distinguishable from zero under
 subject bootstrap with $10{,}000$ resamples. Bootstrap CIs are wide due to
 small $n$; $n=3$ is the standard for sub-3\,B GRPO replication studies but a
 larger seed sample would tighten the intervals further.
@@ -717,15 +717,24 @@ LoRA best arm) and \texttt{maj@4}$=75.0$\,\% (only $5$\,pp below Open-RS's
 $80$\,\% headline). The base \texttt{DeepSeek-R1-Distill-Qwen-1.5B} gives
 \texttt{pass@1}$=50.0$\,\% (matching our paper's $50.0$\,\% base claim) and
 \texttt{maj@4}$=70.0$\,\% (vs Open-RS-reported $62.9$\,\%, $+7$\,pp above).
-The original $12.9$\,pp gap was a metric-mismatch artifact, not a pipeline bug.
+The base \texttt{maj@4}=70.0\,\% comes from a separate evaluation batch
+(\path{w17\_base\_distill\_v2/}) run with \texttt{temperature\_maj}=0.7;
+the \path{base\_v3\_openrs\_eval/} directory was affected by the
+temperature bug and reports \texttt{maj@4}=0.0. The original $12.9$\,pp
+gap was a metric-mismatch artifact, not a pipeline bug.
+
+See Appendix Table~\ref{tab:sources} for exact JSON file provenance and
+Appendix Section~A.4 for the complete bug history.
 
 \textbf{\texttt{maj@4} on AMC-23 -- bug found and fixed.} The pre-revision
 \texttt{maj@4}$=0$ numbers across all arms were caused by two bugs:
 (i)~\texttt{eval.yaml} omitted a \texttt{temperature\_maj} field, causing
 all four maj samples to be deterministic and identical;
 (ii)~\texttt{extract\_prediction()} did not strip whitespace, causing valid
-answers to fail string-matching. Both fixes are in the current codebase;
-the post-fix \texttt{maj@4} numbers are reported in Table~\ref{tab:main}.
+answers to fail string-matching. Both fixes are in the current codebase; the post-fix \texttt{maj@4} numbers
+are reported in Table~\ref{tab:main} and come from the
+\path{w17\_*\_v2/} re-evaluation directories (Appendix
+Table~\ref{tab:sources}).
 
 \textbf{Single base model and scale.} Results are on
 DeepSeek-R1-Distill-Qwen-1.5B only. Generalization to Qwen2.5-Instruct or
@@ -751,7 +760,7 @@ budget: pure English (\armA{}), Vietnamese-translated (\armB{}), and
 English with an additional fastText-based language-consistency reward
 (\armC{}). Multi-seed evaluation reveals three orthogonal findings.
 \textbf{(i)~Positive.} \armC{} achieves the highest mean AIME-2024
-\texttt{maj@8} ($37.8 \pm 1.9$\,\%, $+4.4$\,pp over the untrained base)
+\texttt{maj@8} ($37.8 \pm 1.9$\,\%, $+4.5$\,pp over the untrained base)
 and is the only arm with a positive $\Delta$ on the hardest benchmark,
 robust across three seeds.
 \textbf{(ii)~Methodological.} \armA{} exhibits seed variance
@@ -764,8 +773,8 @@ We initially hypothesized that \armC{}'s effect was a pure
 reward-magnitude perturbation on the PPO clipping geometry, predicting
 that the constant-bias ablation \armD{} would reproduce it. \armD{}
 \emph{fails} to reproduce \armC{}'s AIME-2024 \texttt{maj@8} result
-($\armC{}{-}\armD{}{=}{+}5.58$\,pp, $95\%$ bootstrap CI
-$[+1.13, +11.10]$, excluding $0$), demonstrating that $\R{5}$'s
+($\armC{}{-}\armD{}{=}{+}5.6$\,pp, $95\%$ bootstrap CI
+$[+1.1, +11.1]$, excluding $0$), demonstrating that $\R{5}$'s
 contribution is content-specific rather than a pure reward-magnitude
 perturbation. The most likely source of the load-bearing gradient
 signal is the small fraction of training generations where the model

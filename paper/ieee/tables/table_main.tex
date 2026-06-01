@@ -1,19 +1,29 @@
 \begin{table*}[t]
 \centering\small
-\caption{Multi-seed results across three random seeds (\texttt{42, 123, 7}).
-Cell values are mean $\pm$ standard deviation. The \base{} and \armD{}
-AMC-23 \texttt{pass@1} cells are single-seed (\texttt{42}); all other cells
-report three-seed mean$\pm$std.}
+\caption{Multi-seed results (3 seeds: \texttt{42, 123, 7}).
+All values are mean $\pm$ sample standard deviation across seeds.
+AMC-23 \texttt{maj@4} for \armA{}, \armB{}, \armC{} uses the W17
+post-bugfix re-evaluation (\path{results/eval/w17_*_v2/}) where
+\texttt{temperature\_maj}$=0.7$ was applied; all other columns use the
+original step-50 evaluation. \armD{} was not re-evaluated and uses
+step-50 values throughout. See Table~\ref{tab:sources} for exact JSON
+file provenance.}
 \label{tab:main}
 \begin{tabular}{lccccc}
 \toprule
-Arm & AMC-23 \texttt{pass@1} & AMC-23 \texttt{maj@4} & MATH-500 \texttt{pass@1} & AIME-2024 \texttt{pass@1} & AIME-2024 \texttt{maj@8} \\
+Arm & AMC-23 \texttt{pass@1} & AMC-23 \texttt{maj@4}$^\dagger$ & MATH-500 \texttt{pass@1} & AIME-2024 \texttt{pass@1} & AIME-2024 \texttt{maj@8} \\
 \midrule
 \base{} & 50.0 & 70.0 & 59.4 & 26.7 & 33.3 \\
-\armA{} & 56.7$\pm$11.3 & 70.0$\pm$4.3 & 59.7$\pm$1.7 & 14.4$\pm$7.7 & 32.2$\pm$6.9 \\
-\armB{} & 56.7$\pm$5.2  & 70.0$\pm$2.5 & 60.8$\pm$1.0 & 20.0$\pm$5.8 & 34.4$\pm$1.9 \\
-\armC{} & 57.5$\pm$6.6  & 68.3$\pm$3.8 & 60.7$\pm$0.6 & 21.1$\pm$1.9 & 37.8$\pm$1.9 \\
-\armD{} & 52.5          & 70.0$\pm$2.5 & 61.2$\pm$0.9 & 24.4$\pm$1.9 & 32.2$\pm$5.1 \\
+\armA{} & $56.7\pm11.3$ & $70.0\pm4.3$ & $59.7\pm1.7$ & $14.4\pm7.7$ & $32.2\pm6.9$ \\
+\armB{} & $56.7\pm5.2$  & $70.0\pm2.5$ & $60.8\pm1.0$ & $20.0\pm5.8$ & $34.4\pm1.9$ \\
+\armC{} & $57.5\pm6.6$  & $68.3\pm3.8$ & $60.7\pm0.6$ & $21.1\pm1.9$ & $37.8\pm1.9$ \\
+\armD{} & $52.5\pm0.0$  & $70.0\pm2.5$ & $61.2\pm0.9$ & $24.4\pm1.9$ & $32.2\pm5.1$ \\
 \bottomrule
 \end{tabular}
+
+\medskip
+\noindent\small
+$^\dagger$AMC-23 \texttt{maj@4} for \armA{}/\armB{}/\armC{} uses W17
+post-bugfix re-evaluations (\path{results/eval/w17_*_v2/}); see
+Section~\ref{sec:limitations} for bug history.
 \end{table*}

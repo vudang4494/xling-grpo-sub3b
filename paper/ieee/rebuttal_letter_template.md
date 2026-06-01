@@ -46,12 +46,12 @@ _Reviewer:_ "Single-seed makes assessing the reliability difficult."
 _Response:_ A4 was extended with two additional seeds (123, 7). Updated 3-seed mean ± σ for A4 appears in Table 1. The A3 vs A4 comparison on AIME-2024 maj@8 _[supports/does not support — TBD]_ the magnitude-only hypothesis. The Limitations section has been updated.
 
 ### Issue #5 — Statistical significance for headline claim
-_Reviewer:_ "Is the +4.4pp improvement statistically significant?"
+_Reviewer:_ "Is the +4.5pp improvement statistically significant?"
 _Response:_ Bootstrap 95% CI is **[+3.3, +6.7]** (excludes 0). See new Appendix A.11. Compute: 10,000 resamples, subject bootstrap over 3 seed-level means.
 
 | Comparison | Mean Δ (pp) | 95% CI | Excludes 0? |
 |---|---|---|---|
-| A3 − Base on AIME-2024 m@8 | +4.4 | [+3.3, +6.7] | YES ✓ |
+| A3 − Base on AIME-2024 m@8 | +4.5 | [+3.3, +6.7] | YES ✓ |
 | A2 − Base on AIME-2024 m@8 | +1.1 | [+0.0, +3.3] | borderline |
 | A1 − Base on AIME-2024 m@8 | −5.6 | [−16.7, +6.7] | NO |
 | A3 − A4 on AIME-2024 m@8 | _TBD_ | _TBD_ | _TBD_ |

@@ -1,17 +1,32 @@
 """Phase 9.5 — Aggregate all eval JSONs into master CSV + bootstrap 95% CIs.
 
 Outputs:
-    results/master.csv               One row per (cell, benchmark, language)
-    reports/phase9_runs/stats.csv    Per-arm statistics + bootstrap CIs
-    paper/tables/table_main_v2.tex   Multi-seed main results table
-    paper/tables/table_delta_v2.tex  Δ vs base with CIs
-    paper/tables/table_mgsm.tex      Multilingual sweep table
+    results/master_v2.csv            One row per (cell, benchmark, language)
+    results/stats_v2.csv             Per-arm statistics + bootstrap CIs
+    paper/tables/table_main.tex     Multi-seed main results (hand-written, verified)
+    paper/tables/table_delta.tex    Δ vs base
+    paper/tables/table_mgsm.tex     Multilingual sweep
 
-Usage: python3 scripts/aggregate_phase9.py
+This script is the authoritative source for aggregate statistics.
+It replaces the old aggregate.py and superseded aggregate_phase9.py.
+
+SOURCES (verified against eval JSONs on disk):
+  - AMC-23 pass@1, MATH-500 pass@1, AIME-2024 pass@1, AIME-2024 maj@8:
+      results/eval/{cell}_step50/*.json
+  - AMC-23 maj@4 for ArmA/ArmB/ArmC:
+      results/eval/w17_{cell}_{seed}_v2/*.json  (post-fix re-eval)
+  - AMC-23 maj@4 for Base, ArmD:
+      results/eval/w17_base_distill_v2/ (Base)
+      results/eval/a4_const_bias_{seed}_step50/ (ArmD)
+  - MGSM:
+      results/eval/{cell}_mgsm/*.json
+
+Usage: python3 scripts/aggregate_phase9.py [--print-only]
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import random
@@ -20,39 +35,186 @@ from pathlib import Path
 
 ROOT = Path("/Users/vudang/PythonLab/Papper/xling-grpo-sub3b")
 EVAL = ROOT / "results/eval"
-OUT_MASTER = ROOT / "results/master.csv"
-OUT_STATS = ROOT / "reports/phase9_runs/stats.csv"
+OUT_MASTER = ROOT / "results/master_v2.csv"
+OUT_STATS = ROOT / "results/stats_v2.csv"
 OUT_TABLES = ROOT / "paper/tables"
 
-CELLS = {
-    "Base":        {"dir": "base_v3_openrs_eval", "arm": "Base", "seed": None},
-    "Base (P9)":   {"dir": "base_distill15b_mgsm", "arm": "Base", "seed": None},
-    "A1_42":       {"dir": "ckpt50_v3_openrs_eval", "arm": "A1", "seed": 42},
-    "A1_123":      {"dir": "reproduce_openrs_rs2_123_step50", "arm": "A1", "seed": 123},
-    "A1_7":        {"dir": "reproduce_openrs_rs2_7_step50", "arm": "A1", "seed": 7},
-    "A2_42":       {"dir": "a2_vi_42_step50", "arm": "A2", "seed": 42},
-    "A2_123":      {"dir": "a2_vi_123_step50", "arm": "A2", "seed": 123},
-    "A2_7":        {"dir": "a2_vi_7_step50", "arm": "A2", "seed": 7},
-    "A3_42":       {"dir": "a3_enlang_42_step50", "arm": "A3", "seed": 42},
-    "A3_123":      {"dir": "a3_enlang_123_step50", "arm": "A3", "seed": 123},
-    "A3_7":        {"dir": "a3_enlang_7_step50", "arm": "A3", "seed": 7},
-    "A4_42":       {"dir": "a4_const_bias_42_step50", "arm": "A4", "seed": 42},
+# ---------------------------------------------------------------------------
+# Canonical data manifest: (arm, seed, benchmark) -> relative JSON path
+# All paths verified to exist on disk as of 2026-06-01.
+# ---------------------------------------------------------------------------
+MANIFEST: dict[tuple[str, int | None, str], str] = {
+    # ---- Base (single eval, no training) ----
+    ("base", 42, "amc23"):   "w17_base_distill_v2/base_distill_v2_amc23.json",
+    ("base", 42, "math500"): "base_v3_openrs_eval/base_v3_math500.json",
+    ("base", 42, "aime2024"):"base_v3_openrs_eval/base_v3_aime2024.json",
+    # ---- ArmA (reproduce_openrs_rs2) — seeds 42, 123, 7 ----
+    ("A1", 42,  "amc23"):   "w17_reproduce_openrs_rs2_42_v2/reproduce_openrs_rs2_42_v2_amc23.json",
+    ("A1", 42,  "math500"): "ckpt50_v3_openrs_eval/ckpt50_v3_math500.json",
+    ("A1", 42,  "aime2024"):"ckpt50_v3_openrs_eval/ckpt50_v3_aime2024.json",
+    ("A1", 123, "amc23"):   "w17_reproduce_openrs_rs2_123_v2/reproduce_openrs_rs2_123_v2_amc23.json",
+    ("A1", 123, "math500"): "reproduce_openrs_rs2_123_step50/reproduce_openrs_rs2_123_step50_math500.json",
+    ("A1", 123, "aime2024"):"reproduce_openrs_rs2_123_step50/reproduce_openrs_rs2_123_step50_aime2024.json",
+    ("A1", 7,   "amc23"):   "w17_reproduce_openrs_rs2_7_v2/reproduce_openrs_rs2_7_v2_amc23.json",
+    ("A1", 7,   "math500"): "reproduce_openrs_rs2_7_step50/reproduce_openrs_rs2_7_step50_math500.json",
+    ("A1", 7,   "aime2024"):"reproduce_openrs_rs2_7_step50/reproduce_openrs_rs2_7_step50_aime2024.json",
+    # ---- ArmB (a2_vi) — seeds 42, 123, 7 ----
+    ("A2", 42,  "amc23"):   "w17_a2_vi_42_v2/a2_vi_42_v2_amc23.json",
+    ("A2", 42,  "math500"): "a2_vi_42_step50/a2_vi_42_step50_math500.json",
+    ("A2", 42,  "aime2024"):"a2_vi_42_step50/a2_vi_42_step50_aime2024.json",
+    ("A2", 123, "amc23"):   "w17_a2_vi_123_v2/a2_vi_123_v2_amc23.json",
+    ("A2", 123, "math500"): "a2_vi_123_step50/a2_vi_123_step50_math500.json",
+    ("A2", 123, "aime2024"):"a2_vi_123_step50/a2_vi_123_step50_aime2024.json",
+    ("A2", 7,   "amc23"):   "w17_a2_vi_7_v2/a2_vi_7_v2_amc23.json",
+    ("A2", 7,   "math500"): "a2_vi_7_step50/a2_vi_7_step50_math500.json",
+    ("A2", 7,   "aime2024"):"a2_vi_7_step50/a2_vi_7_step50_aime2024.json",
+    # ---- ArmC (a3_enlang) — seeds 42, 123, 7 ----
+    ("A3", 42,  "amc23"):   "w17_a3_enlang_42_v2/a3_enlang_42_v2_amc23.json",
+    ("A3", 42,  "math500"): "a3_enlang_42_step50/a3_enlang_42_step50_math500.json",
+    ("A3", 42,  "aime2024"):"a3_enlang_42_step50/a3_enlang_42_step50_aime2024.json",
+    ("A3", 123, "amc23"):   "w17_a3_enlang_123_v2/a3_enlang_123_v2_amc23.json",
+    ("A3", 123, "math500"): "a3_enlang_123_step50/a3_enlang_123_step50_math500.json",
+    ("A3", 123, "aime2024"):"a3_enlang_123_step50/a3_enlang_123_step50_aime2024.json",
+    ("A3", 7,   "amc23"):   "w17_a3_enlang_7_v2/a3_enlang_7_v2_amc23.json",
+    ("A3", 7,   "math500"): "a3_enlang_7_step50/a3_enlang_7_step50_math500.json",
+    ("A3", 7,   "aime2024"):"a3_enlang_7_step50/a3_enlang_7_step50_aime2024.json",
+    # ---- ArmD (a4_const_bias) — seeds 42, 123, 7 (step50, not re-evaluated) ----
+    ("A4", 42,  "amc23"):   "a4_const_bias_42_step50/a4_const_bias_42_step50_amc23.json",
+    ("A4", 42,  "math500"): "a4_const_bias_42_step50/a4_const_bias_42_step50_math500.json",
+    ("A4", 42,  "aime2024"):"a4_const_bias_42_step50/a4_const_bias_42_step50_aime2024.json",
+    ("A4", 123, "amc23"):   "a4_const_bias_123_step50/a4_const_bias_123_step50_amc23.json",
+    ("A4", 123, "math500"): "a4_const_bias_123_step50/a4_const_bias_123_step50_math500.json",
+    ("A4", 123, "aime2024"):"a4_const_bias_123_step50/a4_const_bias_123_step50_aime2024.json",
+    ("A4", 7,   "amc23"):   "a4_const_bias_7_step50/a4_const_bias_7_step50_amc23.json",
+    ("A4", 7,   "math500"): "a4_const_bias_7_step50/a4_const_bias_7_step50_math500.json",
+    ("A4", 7,   "aime2024"):"a4_const_bias_7_step50/a4_const_bias_7_step50_aime2024.json",
 }
-MGSM_CELLS = {
-    "BaseMGSM": {"dir": "base_distill15b_mgsm", "arm": "Base", "seed": None},
-    "A1_123_MGSM": {"dir": "reproduce_openrs_rs2_123_mgsm", "arm": "A1", "seed": 123},
-    "A1_7_MGSM":   {"dir": "reproduce_openrs_rs2_7_mgsm", "arm": "A1", "seed": 7},
-    "A2_123_MGSM": {"dir": "a2_vi_123_mgsm", "arm": "A2", "seed": 123},
-    "A2_7_MGSM":   {"dir": "a2_vi_7_mgsm", "arm": "A2", "seed": 7},
-    "A3_123_MGSM": {"dir": "a3_enlang_123_mgsm", "arm": "A3", "seed": 123},
-    "A3_7_MGSM":   {"dir": "a3_enlang_7_mgsm", "arm": "A3", "seed": 7},
-    "A4_42_MGSM":  {"dir": "a4_const_bias_42_mgsm", "arm": "A4", "seed": 42},
+
+# MGSM manifest: (arm, seed, lang) -> relative JSON path
+MGSM_MANIFEST: dict[tuple[str, int | None, str], str] = {
+    ("base", 42, "en"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_en.json",
+    ("base", 42, "es"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_es.json",
+    ("base", 42, "fr"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_fr.json",
+    ("base", 42, "de"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_de.json",
+    ("base", 42, "ru"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_ru.json",
+    ("base", 42, "zh"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_zh.json",
+    ("base", 42, "ja"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_ja.json",
+    ("base", 42, "th"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_th.json",
+    ("base", 42, "sw"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_sw.json",
+    ("base", 42, "bn"): "base_distill15b_mgsm/base_distill15b_mgsm_mgsm_bn.json",
+    # A1: seeds 123 and 7 (seed 42 MGSM not run)
+    ("A1", 123, "en"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_en.json",
+    ("A1", 123, "es"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_es.json",
+    ("A1", 123, "fr"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_fr.json",
+    ("A1", 123, "de"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_de.json",
+    ("A1", 123, "ru"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_ru.json",
+    ("A1", 123, "zh"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_zh.json",
+    ("A1", 123, "ja"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_ja.json",
+    ("A1", 123, "th"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_th.json",
+    ("A1", 123, "sw"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_sw.json",
+    ("A1", 123, "bn"): "reproduce_openrs_rs2_123_mgsm/reproduce_openrs_rs2_123_mgsm_mgsm_bn.json",
+    ("A1", 7,   "en"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_en.json",
+    ("A1", 7,   "es"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_es.json",
+    ("A1", 7,   "fr"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_fr.json",
+    ("A1", 7,   "de"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_de.json",
+    ("A1", 7,   "ru"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_ru.json",
+    ("A1", 7,   "zh"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_zh.json",
+    ("A1", 7,   "ja"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_ja.json",
+    ("A1", 7,   "th"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_th.json",
+    ("A1", 7,   "sw"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_sw.json",
+    ("A1", 7,   "bn"): "reproduce_openrs_rs2_7_mgsm/reproduce_openrs_rs2_7_mgsm_mgsm_bn.json",
+    # A2: seeds 123 and 7
+    ("A2", 123, "en"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_en.json",
+    ("A2", 123, "es"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_es.json",
+    ("A2", 123, "fr"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_fr.json",
+    ("A2", 123, "de"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_de.json",
+    ("A2", 123, "ru"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_ru.json",
+    ("A2", 123, "zh"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_zh.json",
+    ("A2", 123, "ja"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_ja.json",
+    ("A2", 123, "th"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_th.json",
+    ("A2", 123, "sw"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_sw.json",
+    ("A2", 123, "bn"): "a2_vi_123_mgsm/a2_vi_123_mgsm_mgsm_bn.json",
+    ("A2", 7,   "en"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_en.json",
+    ("A2", 7,   "es"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_es.json",
+    ("A2", 7,   "fr"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_fr.json",
+    ("A2", 7,   "de"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_de.json",
+    ("A2", 7,   "ru"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_ru.json",
+    ("A2", 7,   "zh"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_zh.json",
+    ("A2", 7,   "ja"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_ja.json",
+    ("A2", 7,   "th"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_th.json",
+    ("A2", 7,   "sw"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_sw.json",
+    ("A2", 7,   "bn"): "a2_vi_7_mgsm/a2_vi_7_mgsm_mgsm_bn.json",
+    # A3: seeds 123 and 7
+    ("A3", 123, "en"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_en.json",
+    ("A3", 123, "es"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_es.json",
+    ("A3", 123, "fr"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_fr.json",
+    ("A3", 123, "de"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_de.json",
+    ("A3", 123, "ru"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_ru.json",
+    ("A3", 123, "zh"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_zh.json",
+    ("A3", 123, "ja"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_ja.json",
+    ("A3", 123, "th"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_th.json",
+    ("A3", 123, "sw"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_sw.json",
+    ("A3", 123, "bn"): "a3_enlang_123_mgsm/a3_enlang_123_mgsm_mgsm_bn.json",
+    ("A3", 7,   "en"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_en.json",
+    ("A3", 7,   "es"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_es.json",
+    ("A3", 7,   "fr"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_fr.json",
+    ("A3", 7,   "de"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_de.json",
+    ("A3", 7,   "ru"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_ru.json",
+    ("A3", 7,   "zh"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_zh.json",
+    ("A3", 7,   "ja"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_ja.json",
+    ("A3", 7,   "th"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_th.json",
+    ("A3", 7,   "sw"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_sw.json",
+    ("A3", 7,   "bn"): "a3_enlang_7_mgsm/a3_enlang_7_mgsm_mgsm_bn.json",
+    # A4: seed 42 only
+    ("A4", 42, "en"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_en.json",
+    ("A4", 42, "es"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_es.json",
+    ("A4", 42, "fr"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_fr.json",
+    ("A4", 42, "de"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_de.json",
+    ("A4", 42, "ru"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_ru.json",
+    ("A4", 42, "zh"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_zh.json",
+    ("A4", 42, "ja"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_ja.json",
+    ("A4", 42, "th"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_th.json",
+    ("A4", 42, "sw"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_sw.json",
+    ("A4", 42, "bn"): "a4_const_bias_42_mgsm/a4_const_bias_42_mgsm_mgsm_bn.json",
 }
+
 LANGS = ["en", "es", "fr", "de", "ru", "zh", "ja", "th", "sw", "bn"]
 
 
-def bootstrap_ci(values: list[float], n_boot: int = 10000, alpha: float = 0.05) -> tuple[float, float, float]:
-    """Returns (mean, low, high) — bootstrap CI on the sample mean."""
+def load_metric(arm: str, seed: int | None, bench: str, metric: str) -> float | None:
+    key = (arm, seed, bench)
+    rel = MANIFEST.get(key)
+    if rel is None:
+        return None
+    fp = EVAL / rel
+    if not fp.exists():
+        return None
+    try:
+        d = json.loads(fp.read_text())
+        return d.get(metric)
+    except Exception:
+        return None
+
+
+def load_mgsm_metric(arm: str, seed: int | None, lang: str) -> float | None:
+    key = (arm, seed, lang)
+    rel = MGSM_MANIFEST.get(key)
+    if rel is None:
+        return None
+    fp = EVAL / rel
+    if not fp.exists():
+        return None
+    try:
+        d = json.loads(fp.read_text())
+        return d.get("pass_at_1")
+    except Exception:
+        return None
+
+
+def bootstrap_ci(
+    values: list[float], n_boot: int = 10000, alpha: float = 0.05
+) -> tuple[float, float, float]:
+    """Subject-level bootstrap CI on the sample mean."""
     if len(values) == 0:
         return 0.0, 0.0, 0.0
     if len(values) == 1:
@@ -64,238 +226,147 @@ def bootstrap_ci(values: list[float], n_boot: int = 10000, alpha: float = 0.05) 
         sample = [values[rng.randrange(n)] for _ in range(n)]
         means.append(sum(sample) / n)
     means.sort()
-    return st.mean(values), means[int(n_boot * alpha / 2)], means[int(n_boot * (1 - alpha / 2))]
+    lo = means[int(n_boot * alpha / 2)]
+    hi = means[int(n_boot * (1 - alpha / 2))]
+    return st.mean(values), lo, hi
 
 
-def collect_master_rows() -> list[dict]:
-    """Build master.csv: one row per (cell, benchmark, lang)."""
-    rows = []
+def compute_stats() -> list[dict]:
+    """Per (arm, benchmark, metric) — mean, std, n_seeds, bootstrap CI."""
+    ARMS = ["base", "A1", "A2", "A3", "A4"]
+    SEEDS_PER_ARM = {
+        "base": [42],
+        "A1": [42, 123, 7],
+        "A2": [42, 123, 7],
+        "A3": [42, 123, 7],
+        "A4": [42, 123, 7],
+    }
+    BENCHES = ["amc23", "math500", "aime2024"]
+    METRICS = ["pass_at_1", "maj_at_4", "maj_at_8"]
+    results = []
 
-    for cell_id, info in CELLS.items():
-        d = EVAL / info["dir"]
-        if not d.exists():
-            continue
-        for f in d.glob("*.json"):
-            j = json.loads(f.read_text())
-            rows.append({
-                "cell": cell_id,
-                "arm": info["arm"],
-                "seed": info["seed"],
-                "benchmark": j.get("benchmark", ""),
-                "language": j.get("language") or "en",
-                "n_samples": j.get("n_samples"),
-                "pass_at_1": j.get("pass_at_1"),
-                "maj_at_4": j.get("maj_at_4"),
-                "maj_at_8": j.get("maj_at_8"),
+    for arm in ARMS:
+        seeds = SEEDS_PER_ARM[arm]
+        for bench in BENCHES:
+            for metric in METRICS:
+                vals = []
+                for seed in seeds:
+                    v = load_metric(arm, seed, bench, metric)
+                    # maj_at_4 = 0 is valid (means 0% majority correct)
+                    if isinstance(v, (int, float)):
+                        vals.append(v)
+                if not vals:
+                    continue
+                mean, lo, hi = bootstrap_ci(vals)
+                results.append({
+                    "arm": arm,
+                    "benchmark": bench,
+                    "metric": metric,
+                    "n_seeds": len(vals),
+                    "mean": round(mean, 6),
+                    "std": round(st.stdev(vals), 6) if len(vals) > 1 else 0.0,
+                    "ci_low": round(lo, 6),
+                    "ci_high": round(hi, 6),
+                    "values": ",".join(f"{v:.4f}" for v in vals),
+                })
+
+    # MGSM
+    MGSM_SEEDS = {"base": [42], "A1": [123, 7], "A2": [123, 7], "A3": [123, 7], "A4": [42]}
+    for arm in ["base", "A1", "A2", "A3", "A4"]:
+        for lang in LANGS:
+            vals = []
+            for seed in MGSM_SEEDS[arm]:
+                v = load_mgsm_metric(arm, seed, lang)
+                if isinstance(v, (int, float)):
+                    vals.append(v)
+            if not vals:
+                continue
+            mean, lo, hi = bootstrap_ci(vals)
+            results.append({
+                "arm": arm,
+                "benchmark": f"mgsm_{lang}",
+                "metric": "pass_at_1",
+                "n_seeds": len(vals),
+                "mean": round(mean, 6),
+                "std": round(st.stdev(vals), 6) if len(vals) > 1 else 0.0,
+                "ci_low": round(lo, 6),
+                "ci_high": round(hi, 6),
+                "values": ",".join(f"{v:.4f}" for v in vals),
             })
 
-    for cell_id, info in MGSM_CELLS.items():
-        d = EVAL / info["dir"]
-        if not d.exists():
+    return results
+
+
+def write_master_v2(stats: list[dict]) -> None:
+    """Write every JSON value (one row per manifest entry) to master CSV."""
+    rows = []
+    for (arm, seed, bench), rel in MANIFEST.items():
+        fp = EVAL / rel
+        if not fp.exists():
             continue
-        for lang in LANGS:
-            for f in d.glob(f"*_mgsm_{lang}.json"):
-                j = json.loads(f.read_text())
-                rows.append({
-                    "cell": cell_id,
-                    "arm": info["arm"],
-                    "seed": info["seed"],
-                    "benchmark": "mgsm",
-                    "language": lang,
-                    "n_samples": j.get("n_samples"),
-                    "pass_at_1": j.get("pass_at_1"),
-                    "maj_at_4": None,
-                    "maj_at_8": None,
-                })
-    return rows
-
-
-def write_master(rows: list[dict]) -> None:
+        try:
+            d = json.loads(fp.read_text())
+        except Exception:
+            continue
+        rows.append({
+            "arm": arm,
+            "seed": seed,
+            "benchmark": bench,
+            "pass_at_1": d.get("pass_at_1"),
+            "maj_at_4": d.get("maj_at_4"),
+            "maj_at_8": d.get("maj_at_8"),
+            "n_samples": d.get("n_samples"),
+            "source_file": rel,
+        })
     OUT_MASTER.parent.mkdir(parents=True, exist_ok=True)
     with OUT_MASTER.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["cell", "arm", "seed", "benchmark", "language",
-                                          "n_samples", "pass_at_1", "maj_at_4", "maj_at_8"])
+        w = csv.DictWriter(f, fieldnames=["arm", "seed", "benchmark",
+                                          "pass_at_1", "maj_at_4", "maj_at_8",
+                                          "n_samples", "source_file"])
         w.writeheader()
         w.writerows(rows)
-    print(f"  master.csv: {len(rows)} rows -> {OUT_MASTER}")
+    print(f"  master_v2.csv: {len(rows)} rows -> {OUT_MASTER}")
 
 
-def compute_stats(rows: list[dict]) -> list[dict]:
-    """Per (arm, benchmark, language, metric) — mean ± σ + bootstrap 95% CI."""
-    by_key: dict[tuple, list[float]] = {}
-    for r in rows:
-        for metric in ["pass_at_1", "maj_at_4", "maj_at_8"]:
-            v = r.get(metric)
-            if not isinstance(v, (int, float)) or (metric == "maj_at_4" and v == 0):
-                continue
-            key = (r["arm"], r["benchmark"], r["language"], metric)
-            by_key.setdefault(key, []).append(v)
-
-    stats = []
-    for (arm, bench, lang, metric), vals in sorted(by_key.items()):
-        mean, lo, hi = bootstrap_ci(vals)
-        stats.append({
-            "arm": arm,
-            "benchmark": bench,
-            "language": lang,
-            "metric": metric,
-            "n_seeds": len(vals),
-            "mean": round(mean, 4),
-            "std": round(st.stdev(vals), 4) if len(vals) > 1 else 0.0,
-            "ci_low": round(lo, 4),
-            "ci_high": round(hi, 4),
-            "values": ",".join(f"{v:.4f}" for v in vals),
-        })
-    return stats
-
-
-def write_stats(stats: list[dict]) -> None:
+def write_stats_v2(stats: list[dict]) -> None:
     OUT_STATS.parent.mkdir(parents=True, exist_ok=True)
     with OUT_STATS.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["arm", "benchmark", "language", "metric",
-                                          "n_seeds", "mean", "std", "ci_low", "ci_high", "values"])
+        w = csv.DictWriter(f, fieldnames=["arm", "benchmark", "metric",
+                                          "n_seeds", "mean", "std",
+                                          "ci_low", "ci_high", "values"])
         w.writeheader()
         w.writerows(stats)
-    print(f"  stats.csv: {len(stats)} entries -> {OUT_STATS}")
-
-
-def write_table_main_v2(stats: list[dict]) -> None:
-    """Multi-seed main results: 3 arms × 5 metrics with mean ± σ."""
-    lookup = {(s["arm"], s["benchmark"], s["language"], s["metric"]): s for s in stats}
-    fmt = lambda s: f"{s['mean']*100:.1f}$\\pm${s['std']*100:.1f}" if s else "—"
-
-    out = OUT_TABLES / "table_main_v2.tex"
-    rows = []
-    rows.append(r"\begin{table*}[t]")
-    rows.append(r"\centering\small")
-    rows.append(r"\caption{Multi-seed results (3 seeds per arm except A4, single seed). Mean$\pm$standard deviation across seeds.}")
-    rows.append(r"\label{tab:main_v2}")
-    rows.append(r"\begin{tabular}{lccccc}")
-    rows.append(r"\toprule")
-    rows.append(r"Arm & AMC-23 p@1 & AMC-23 m@4 & MATH-500 & AIME-2024 p@1 & AIME-2024 m@8 \\")
-    rows.append(r"\midrule")
-
-    for arm in ["Base", "A1", "A2", "A3", "A4"]:
-        amc = lookup.get((arm, "amc23", "en", "pass_at_1"))
-        amc4 = lookup.get((arm, "amc23", "en", "maj_at_4"))
-        math = lookup.get((arm, "math500", "en", "pass_at_1"))
-        aime = lookup.get((arm, "aime2024", "en", "pass_at_1"))
-        aime8 = lookup.get((arm, "aime2024", "en", "maj_at_8"))
-        rows.append(f"\\textsc{{{arm}}} & {fmt(amc)} & {fmt(amc4)} & {fmt(math)} & {fmt(aime)} & {fmt(aime8)} \\\\")
-
-    rows.append(r"\bottomrule")
-    rows.append(r"\end{tabular}")
-    rows.append(r"\end{table*}")
-    out.write_text("\n".join(rows))
-    print(f"  table_main_v2.tex -> {out}")
-
-
-def write_table_mgsm(stats: list[dict]) -> None:
-    """MGSM sweep: 5 arms × 10 languages."""
-    lookup = {(s["arm"], s["benchmark"], s["language"], s["metric"]): s for s in stats}
-    fmt = lambda s: f"{s['mean']*100:.1f}" if s else "—"
-
-    out = OUT_TABLES / "table_mgsm.tex"
-    rows = []
-    rows.append(r"\begin{table*}[t]")
-    rows.append(r"\centering\small")
-    rows.append(r"\caption{MGSM multilingual evaluation (pass@1, 250 problems per language). Mean across seeds.}")
-    rows.append(r"\label{tab:mgsm}")
-    rows.append(r"\begin{tabular}{l" + "c" * len(LANGS) + r"c}")
-    rows.append(r"\toprule")
-    header = "Arm & " + " & ".join(f"\\textsc{{{l}}}" for l in LANGS) + r" & Mean \\"
-    rows.append(header)
-    rows.append(r"\midrule")
-    for arm in ["Base", "A1", "A2", "A3", "A4"]:
-        vals = []
-        for lang in LANGS:
-            s = lookup.get((arm, "mgsm", lang, "pass_at_1"))
-            vals.append(s)
-        cells = " & ".join(fmt(s) for s in vals)
-        mean_vals = [s["mean"] for s in vals if s]
-        mean_str = f"{sum(mean_vals)/len(mean_vals)*100:.1f}" if mean_vals else "—"
-        rows.append(f"\\textsc{{{arm}}} & {cells} & {mean_str} \\\\")
-    rows.append(r"\bottomrule")
-    rows.append(r"\end{tabular}")
-    rows.append(r"\end{table*}")
-    out.write_text("\n".join(rows))
-    print(f"  table_mgsm.tex -> {out}")
-
-
-def write_table_delta_v2(stats: list[dict]) -> None:
-    """Δ vs base with bootstrap CI."""
-    lookup = {(s["arm"], s["benchmark"], s["language"], s["metric"]): s for s in stats}
-
-    out = OUT_TABLES / "table_delta_v2.tex"
-    rows = []
-    rows.append(r"\begin{table}[t]")
-    rows.append(r"\centering\small")
-    rows.append(r"\caption{Effect $\Delta$ vs base, with $\pm 1\sigma$ across seeds.}")
-    rows.append(r"\label{tab:delta_v2}")
-    rows.append(r"\begin{tabular}{lcccc}")
-    rows.append(r"\toprule")
-    rows.append(r"Metric & A1 & A2 & A3 & A4 \\")
-    rows.append(r"\midrule")
-
-    metrics = [
-        ("AMC-23 p@1", "amc23", "en", "pass_at_1"),
-        ("MATH-500", "math500", "en", "pass_at_1"),
-        ("AIME-2024 p@1", "aime2024", "en", "pass_at_1"),
-        ("AIME-2024 m@8", "aime2024", "en", "maj_at_8"),
-        ("MGSM mean", "mgsm_mean", "all", "pass_at_1"),
-    ]
-
-    for name, bench, lang, metric in metrics:
-        base_s = lookup.get(("Base", bench, lang, metric))
-        if bench == "mgsm_mean":
-            base_v = 0.473  # MGSM base mean computed
-        else:
-            base_v = base_s["mean"] if base_s else None
-
-        cells = []
-        for arm in ["A1", "A2", "A3", "A4"]:
-            if bench == "mgsm_mean":
-                arm_vals = [s["mean"] for s in stats if s["arm"] == arm and s["benchmark"] == "mgsm"]
-                if arm_vals and base_v is not None:
-                    arm_mean = sum(arm_vals) / len(arm_vals)
-                    delta = (arm_mean - base_v) * 100
-                    cells.append(f"{delta:+.1f}")
-                else:
-                    cells.append("—")
-            else:
-                s = lookup.get((arm, bench, lang, metric))
-                if s and base_v is not None:
-                    delta = (s["mean"] - base_v) * 100
-                    sigma = s["std"] * 100
-                    cells.append(f"{delta:+.1f}$\\pm${sigma:.1f}")
-                else:
-                    cells.append("—")
-        rows.append(f"{name} & " + " & ".join(cells) + r" \\")
-
-    rows.append(r"\bottomrule")
-    rows.append(r"\end{tabular}")
-    rows.append(r"\end{table}")
-    out.write_text("\n".join(rows))
-    print(f"  table_delta_v2.tex -> {out}")
+    print(f"  stats_v2.csv: {len(stats)} entries -> {OUT_STATS}")
 
 
 def main() -> None:
-    print("[aggregate] reading eval JSONs...")
-    rows = collect_master_rows()
-    print(f"  {len(rows)} rows collected")
-    write_master(rows)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--print-only", action="store_true")
+    args = parser.parse_args()
 
-    print("[aggregate] computing stats + bootstrap CIs...")
-    stats = compute_stats(rows)
-    write_stats(stats)
+    print("[aggregate_v2] computing statistics...")
+    stats = compute_stats()
 
-    print("[aggregate] generating LaTeX tables...")
-    OUT_TABLES.mkdir(parents=True, exist_ok=True)
-    write_table_main_v2(stats)
-    write_table_mgsm(stats)
-    write_table_delta_v2(stats)
+    # Print verified numbers
+    print("\n========== Verified statistics ==========")
+    for arm in ["base", "A1", "A2", "A3", "A4"]:
+        arm_stats = [s for s in stats if s["arm"] == arm]
+        print(f"\n[{arm.upper()}]")
+        for s in sorted(arm_stats, key=lambda x: (x["benchmark"], x["metric"])):
+            m = f"{s['mean']*100:.1f}"
+            if s["std"] > 0:
+                m += f" ± {s['std']*100:.1f}"
+            ci = f" [95% CI: {s['ci_low']*100:.1f}–{s['ci_high']*100:.1f}]"
+            print(f"  {s['benchmark']:12s} {s['metric']:12s} "
+                  f"n={s['n_seeds']}  {m}%{ci}")
 
-    print("[aggregate] done.")
+    if args.print_only:
+        return
+
+    print("\n[aggregate_v2] writing output files...")
+    write_master_v2(stats)
+    write_stats_v2(stats)
+    print("[aggregate_v2] done.")
 
 
 if __name__ == "__main__":
