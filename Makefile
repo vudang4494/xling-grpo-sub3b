@@ -29,15 +29,15 @@ bundle:  ## Build arXiv submission tar.gz
 	cd paper && bash build_arxiv_bundle.sh
 	@echo "Output: paper/arxiv_submission.tar.gz"
 
-aggregate:  ## Aggregate eval JSONs → results/training/master.csv
+aggregate:  ## Aggregate eval JSONs → results/master.csv
 	python -m src.analysis.aggregate \
-	    --eval_dir results/training/eval/ \
-	    --output results/training/master.csv
+	    --eval_dir results/eval/ \
+	    --output results/master.csv
 
 figures:  ## Regenerate paper figures from master.csv + training logs
 	cd paper && python figures/make_figures.py \
-	    --master ../results/training/master.csv \
-	    --training_logs ../results/training/ \
+	    --master ../results/master.csv \
+	    --training_logs ../results/ \
 	    --output figures/
 
 preflight:  ## Run pre-training environment check

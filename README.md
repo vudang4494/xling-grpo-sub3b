@@ -19,21 +19,21 @@
 
 A multi-seed empirical study of Group Relative Policy Optimization (GRPO)
 post-training on a **1.5B distilled reasoning model** under a **single A100 +
-LoRA `r=16`** budget. Across **three seeds × four arms**, we find:
+LoRA `r=16`** setting. Across **three seeds × four arms**, we find:
 
 - ✅ **A3 (English + language-consistency reward `R5`)** achieves the
-  highest mean AIME-2024 `maj@8` (**37.8 ± 1.9 %**, +4.4 pp over the
-  untrained base), the only arm with a positive Δ on the hardest benchmark.
+  highest mean AIME-2024 `maj@8` (**37.8 ± 1.9 %**, +4.5 pp over the
+  untrained base) — the largest positive Δ on the hardest benchmark
+  (A2 also gains +1.1 pp).
 - ⚠️ **Vanilla English GRPO (A1)** exhibits **σ = 11.3 pp** seed variance
   on AMC-23 — single-seed claims at this scale are unreliable.
 - ❌ **No cross-lingual transfer** on 10-language MGSM: all four arms
-  converge to within ±0.5 pp of the untrained base mean.
+  land within 0.9 pp of the untrained base mean (a 1.1 pp band).
 - 🔬 The mechanism behind `R5` is **content-specific, not pure
   reward-magnitude**: a constant-bias control (A4) fails to reproduce A3's
-  effect (CI [+1.13, +11.10] excludes 0).
+  effect (CI [+1.1, +11.1] excludes 0).
 
-> 📄 Full paper: [`paper/main.pdf`](paper/main.pdf) (11 pages, ACL/arXiv style) ·
-> IEEE Access rendering: [`paper/ieee/main.pdf`](paper/ieee/main.pdf)
+> 📄 Full paper: [`paper/main.pdf`](paper/main.pdf) (12 pages, ACL/arXiv style).
 
 ## Table of contents
 
@@ -158,10 +158,8 @@ xling-grpo-sub3b/
 │
 ├── configs/               — YAML hyperparameters (one per arm + reproduce + eval)
 ├── data/                  — dataset prep and decontamination scripts
-├── docs/                  — project documentation (paper checklist, pipeline, submission guide)
-├── paper/                 — LaTeX source, figures, tables, compiled PDFs
-│   ├── main.{tex,pdf}     — primary manuscript (ACL/arXiv style)
-│   ├── ieee/              — IEEE Access rendering of the same paper
+├── paper/                 — LaTeX source, figures, tables, compiled PDF
+│   ├── main.{tex,pdf}     — manuscript (ACL/arXiv style)
 │   ├── tables/            — LaTeX tables (table_main.tex, table_delta.tex, table_mgsm.tex)
 │   └── figures/           — figures (PDF) + make_figures.py
 ├── results/               — eval JSONs (in git) and LoRA adapters (local-only)
@@ -173,8 +171,6 @@ xling-grpo-sub3b/
 │   └── analysis/          — aggregate.py, bootstrap.py, plot_curves.py
 └── tests/                 — pytest (CPU-safe subset runs in CI)
 ```
-
-See [`docs/README.md`](docs/README.md) for the full documentation index.
 
 ## Reward functions
 
@@ -260,7 +256,7 @@ claims, methodology, and any errors in this work.
 
 This disclosure complies with the
 [ICLR 2026 LLM Policy](https://blog.iclr.cc/2025/08/26/policies-on-large-language-model-usage-at-iclr-2026/),
-NeurIPS Ethics Guidelines, and IEEE Access submission requirements
+NeurIPS Ethics Guidelines, and common venue AI-disclosure policies
 regarding the use of large language models in academic work. See
 [`VERIFICATION.md`](VERIFICATION.md) for the per-component verification
 record.

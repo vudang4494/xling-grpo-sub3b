@@ -65,8 +65,8 @@ Open-RS RS2 itself does not decontaminate. A future ablation will quantify any
 contamination effect via 8-gram overlap statistics.
 
 \subsection{Compute resources}
-Training and evaluation: 1$\times$ NVIDIA A100-SXM4-80GB GPU on commodity
-cloud infrastructure. Total wallclock for the three arms (50 steps each
+Training and evaluation: 1$\times$ NVIDIA A100-SXM4-80GB GPU. Total
+wallclock for the three arms (50 steps each
 plus ckpt-50 evaluation on three benchmarks): 11 hours 39 minutes.
 
 \subsection{Random seeds}
@@ -115,8 +115,7 @@ device.
 Open-RS-reported numbers by $-12.9$\,pp on AMC-23 (50.0\,\% vs 62.9\,\%) and
 $-23.4$\,pp on MATH-500 (59.4\,\% vs 82.8\,\%). The gap closes under
 like-for-like \texttt{maj@k} comparison
-(Section~\ref{sec:limitations}, ``Eval pipeline gap explained by metric
-mismatch''). Suspected residual causes: Math-Verify configuration differences
+(Section~\ref{sec:limitations}, metric-mismatch discussion). Suspected residual causes: Math-Verify configuration differences
 between our adapter and Open-RS's parser (boxed-match priority), or vLLM
 tokenizer edge cases. We report numbers vs.\ our own base rather than vs.\
 Open-RS reported.
@@ -146,12 +145,12 @@ because the v3 eval was affected by the temperature bug.
 evaluation only (a separate eval batch).
 \end{itemize}
 
-\begin{table}[t]
-\centering\small
+\begin{table*}[t]
+\centering\footnotesize
 \caption{Source JSON files for every number in Tables~\ref{tab:main} and~\ref{tab:delta}.
-All paths are relative to \path{results/eval/}.}
+All paths are relative to \texttt{results/eval/}.}
 \label{tab:sources}
-\begin{tabular}{lll}
+\begin{tabular}{@{}p{0.30\textwidth} l p{0.46\textwidth}@{}}
 \toprule
 Cell & Metric & Source JSON file \\
 \midrule
@@ -177,9 +176,10 @@ Table~\ref{tab:main} &
 \path{\{cell\}\_step50/...\_\{bench\}.json} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 \subsection{AMC-23 \texttt{maj@4}: temperature bug and fix}
+\label{sec:maj4_bug}
 During initial evaluation (May 2026) the \texttt{configs/eval.yaml} was missing
 the \texttt{temperature\_maj} field.  Consequently all majority-vote rollouts used
 \texttt{temperature}=0.0 (greedy), producing \emph{identical} samples for every
@@ -198,8 +198,9 @@ temperature 0.7 by accident in the original run (the fallback in
 \texttt{src/eval/runner.py} defaults to 0.7 when
 \texttt{temperature\_maj} is absent), so no correction was needed.
 
-\subsection{Training-curve limitation (Figure~5)}
-Figure~5 reports mean $\pm \sigma$ across \emph{two} seeds (123 and 7) for
+\subsection{Training-curve logging limitation}
+The released training-curve logs report mean $\pm \sigma$ across only
+\emph{two} seeds (123 and 7) for
 arms \armA{}, \armB{}, \armC{}, because the seed-42 checkpoint logs were not
 saved for those arms.  The \armD{} training curves are not included because
 its training was run separately after the main logging infrastructure was

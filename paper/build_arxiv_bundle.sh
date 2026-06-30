@@ -45,11 +45,11 @@ mkdir -p arxiv_submission/figures arxiv_submission/tables
 
 cp main.tex appendix.tex refs.bib acl.sty acl_natbib.bst arxiv_submission/
 
-# Copy only used tables (not the empty stubs from earlier)
-cp tables/table_results.tex tables/table_delta_vs_base.tex arxiv_submission/tables/
+# Copy the tables actually \input by main.tex
+cp tables/table_main.tex tables/table_delta.tex tables/table_mgsm.tex arxiv_submission/tables/
 
-# Copy figures (PDFs only, not .py source)
-cp figures/fig1_arm_comparison.pdf figures/fig2_training_curves.pdf figures/fig3_effect_sizes.pdf arxiv_submission/figures/
+# Copy the figures actually \includegraphics by main.tex (PDFs only, not .py source)
+cp figures/fig1_arm_means_with_ci.pdf figures/fig3_variance_ratios.pdf figures/fig6_aime_focus.pdf arxiv_submission/figures/
 
 # 4. Verify standalone build
 echo "[arxiv] Verifying standalone compile..."
@@ -59,7 +59,7 @@ if [[ ! -f main.pdf ]]; then
     echo "[arxiv] ERROR: main.pdf was not created" >&2
     exit 1
 fi
-PAGES=$(mdls -name kMDItemNumberOfPages main.pdf 2>/dev/null | grep -oE '[0-9]+' | head -1)
+PAGES=$(mdls -name kMDItemNumberOfPages main.pdf 2>/dev/null | grep -oE '[0-9]+' | head -1 || true)
 SIZE=$(stat -f%z main.pdf 2>/dev/null || stat -c%s main.pdf)
 echo "[arxiv] PDF: ${PAGES:-?} pages, $((SIZE/1024)) KB"
 cd ..
@@ -80,4 +80,4 @@ echo "  1. Open https://arxiv.org/submit (after endorsement)"
 echo "  2. Upload: $(pwd)/arxiv_submission.tar.gz"
 echo "  3. Primary category: cs.CL ; Cross-list: cs.LG"
 echo "  4. License: CC BY 4.0"
-echo "  5. Comments: '7 pages, 3 figures, 2 tables. Code: <github>. Single seed.'"
+echo "  5. Comments: '12 pages, 3 figures, 3 tables. Code: github.com/vudang4494/xling-grpo-sub3b. Multi-seed (3 seeds x 4 arms).'"

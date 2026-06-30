@@ -97,14 +97,15 @@ benchmark~\cite{mgsm_2022}.
 We report three orthogonal findings.
 \textbf{(i)~Positive.} On AIME-2024 \texttt{maj@8} -- the hardest benchmark
 in our suite -- \armC{} achieves the highest mean accuracy
-($37.8 \pm 1.9$\,\%) and the only positive effect over the untrained base
-($+4.5$\,pp), robust across three seeds.
+($37.8 \pm 1.9$\,\%) and the largest positive effect over the untrained
+base ($+4.5$\,pp; the only other positive arm, \armB{}, gains just
+$+1.1$\,pp), robust across three seeds.
 \textbf{(ii)~Methodological.} \armA{} exhibits $\sigma{=}11.3$\,pp seed
 variance on AMC-23 and consistently degrades AIME-2024 \texttt{pass@1}
 (mean $-12.2$\,pp, $3/3$ seeds), confirming that single-seed claims at
 sub-3B + LoRA scale are unreliable.
 \textbf{(iii)~Negative.} On 10-language MGSM, all four training
-conditions converge to within $\pm 0.5$\,pp of the untrained base mean,
+conditions converge to within $0.9$\,pp of the untrained base mean,
 indicating that training-language choice does not produce cross-lingual
 transfer at this scale. The constant-bias ablation \armD{} fails to
 reproduce \armC{}'s effect on AIME-2024 \texttt{maj@8}
@@ -141,8 +142,8 @@ recipe at this scale:
 (ii)~the reward sum is dominated by accuracy and format components.
 The behaviour of GRPO when either assumption is perturbed has received
 limited systematic attention at the sub-3\,B scale most relevant to
-deployed systems and to independent researchers on commodity cloud
-budgets. This paper supplies a multi-seed controlled study at that
+deployed systems and to independent researchers with single-GPU
+resources. This paper supplies a multi-seed controlled study at that
 scale.
 
 \boxedclaim{%
@@ -152,17 +153,17 @@ highest mean AIME-2024 \texttt{maj@8} ($+4.5 \pm 1.9$\,pp over base across
 three seeds). (ii)~Vanilla English GRPO \armA{} exhibits
 $\sigma{=}11.3$\,pp seed variance on AMC-23 and consistently degrades
 AIME-2024 \texttt{pass@1} by $-12.2 \pm 7.7$\,pp. (iii)~On 10-language
-MGSM, all training conditions converge to within $\pm 0.5$\,pp of the
+MGSM, all training conditions converge to within $0.9$\,pp of the
 untrained base. A three-seed constant-bias control \armD{} fails to
 reproduce \armC{}'s effect on AIME-2024 \texttt{maj@8}
-($rmC{}-rmD{}=+5.6$\,pp; $95\%$ subject-bootstrap CI
+($\armC{}{-}\armD{}{=}{+}5.6$\,pp; $95\%$ subject-bootstrap CI
 $[+1.1, +11.1]$, excludes $0$), refuting a pure reward-magnitude explanation.}
 
 \paragraph{Why sub-3B and a single GPU?}
 Sub-3B reasoning models are the deployment frontier for resource-constrained
 applications. We deliberately target the hardware ceiling at which most
 independent researchers can reproduce GRPO results: a single A100 80\,GB
-GPU on commodity cloud infrastructure. Open-RS~\cite{openRS_2025} reports
+GPU. Open-RS~\cite{openRS_2025} reports
 $80$\,\% AMC-23 \texttt{maj@k} with $4{\times}$A40 full-parameter training
 ($192$\,GB total VRAM); we use LoRA $r{=}16$ as the natural fallback at
 one-quarter VRAM and reach $57.5$\,\% \texttt{pass@1} (or $75.0$\,\%
@@ -177,8 +178,7 @@ vary only the test language. M-Thinker~\cite{mthinker_2025} works at sub-3\,B
 but focuses on Chinese-only multilingual training. Our three-arm
 comparison (\armA{}~EN, \armB{}~VI, \armC{}~EN${+}R_5$) is, to our
 knowledge, the first controlled study at this scale where exactly one
-axis (language or reward) is changed at a time on a single base model and
-budget.
+axis (language or reward) is changed at a time on a single base model.
 
 \paragraph{Contributions.}
 \begin{enumerate}\itemsep0pt
@@ -226,7 +226,7 @@ OpenMathInstruct-2~\cite{openmathinstruct2_2024} supplies English-only
 training data. Cross-lingual collapse~\cite{xlingual_collapse_2025} is
 the closest concurrent work, observing language drift during GRPO at
 $\geq 3$\,B; our setting differs in three respects: (i)~sub-3\,B with a
-single-GPU LoRA budget where prior baselines underperform their reported
+single-GPU LoRA setting where prior baselines underperform their reported
 numbers; (ii)~a controlled \emph{training-language} ablation in addition
 to test-language variation; and (iii)~explicit reward intervention as a
 treatment. M-Thinker~\cite{mthinker_2025} is the closest scale-matched
@@ -364,8 +364,7 @@ constant reward of $1.0$; we describe it together with the mechanism
 hypothesis in Section~\ref{sec:a4_ablation}.
 
 \subsection{Compute and hyperparameters}
-Hardware: $1\times$ NVIDIA A100-SXM4-80\,GB on commodity cloud
-infrastructure. LoRA~\cite{hu2022lora}: $r{=}16$, $\alpha{=}32$,
+Hardware: $1\times$ NVIDIA A100-SXM4-80\,GB. LoRA~\cite{hu2022lora}: $r{=}16$, $\alpha{=}32$,
 dropout~$0.05$, \texttt{bias=none}, target modules
 $\{q,k,v,o\}\_\mathrm{proj}$. GRPO: $G{=}6$,
 \texttt{max\_completion\_length}$=3584$, \texttt{temperature}$=0.7$,
@@ -423,9 +422,10 @@ seed variances, and the AIME-2024 per-seed breakdown.
   \includegraphics[width=0.95\textwidth]{figures/fig3_variance_ratios.pdf}
   \caption{Per-seed standard deviation by arm. \armA{} (vanilla English
   GRPO) exhibits the highest variance on every metric. \armB{}
-  (Vietnamese training) and \armC{} (English + $\R{5}$) reduce variance
-  by $2.6\times$ on AMC-23 and by $\sim 4\times$ on AIME-2024
-  \texttt{maj@8}.}
+  (Vietnamese training) and \armC{} (English + $\R{5}$) reduce seed
+  standard deviation substantially: on AMC-23 from $11.3$ to $5.2$ and
+  $6.6$\,pp ($2.2\times$ and $1.7\times$), and on AIME-2024
+  \texttt{maj@8} from $6.9$ to $1.9$\,pp ($3.6\times$).}
   \label{fig:variance_ratios}
 \end{figure*}
 
@@ -433,8 +433,9 @@ seed variances, and the AIME-2024 per-seed breakdown.
   \centering
   \includegraphics[width=0.95\columnwidth]{figures/fig6_aime_focus.pdf}
   \caption{AIME-2024 (the hardest benchmark) per-seed values. \armC{}
-  achieves the highest mean and the only positive $\Delta$ over the
-  untrained base on \texttt{maj@8} ($+4.5$\,pp, $\sigma{=}1.9$\,pp).}
+  achieves the highest mean and the largest positive $\Delta$ over the
+  untrained base on \texttt{maj@8} ($+4.5$\,pp, $\sigma{=}1.9$\,pp;
+  \armB{} is the only other positive arm at $+1.1$\,pp).}
   \label{fig:aime_focus}
 \end{figure}
 
@@ -462,11 +463,12 @@ lifts on AMC-23 are statistically indistinguishable across arms
 ($56.7$, $56.7$, $57.5$\,\%); the differentiation appears in
 \emph{reproducibility} rather than \emph{mean performance}.
 
-\subsection{Finding 3: Lang-consistency reward is best on AIME-2024 maj@8}
+\subsection{Finding 3: Language-consistency reward is best on AIME-2024 \texttt{maj@8}}
 \label{sec:finding3}
 \armC{} achieves the highest mean AIME-2024 \texttt{maj@8}
-($37.8 \pm 1.9$\,\%) and is the only arm with a positive $\Delta$ over
-base ($+4.5$\,pp; Figure~\ref{fig:aime_focus}). The effect is robust:
+($37.8 \pm 1.9$\,\%) and the largest positive $\Delta$ over
+base ($+4.5$\,pp; the only other positive arm, \armB{}, gains just
+$+1.1$\,pp; Figure~\ref{fig:aime_focus}). The effect is robust:
 all three seeds produce $36.7$\,\% or higher. The mean reward in
 \armC{} shifts from $\E[\R{1}{+}\R{2}]\approx 0.2$ in \armA{} to
 $\E[\R{1}{+}\R{2}{+}\R{5}]\approx 1.2$, because $\R{5}$ fires
@@ -485,7 +487,7 @@ AMC-23/MATH-500/AIME-2024 suite: the untrained base and \armD{} report
 a single seed (\texttt{42}); \armA{}, \armB{}, \armC{} report the mean
 of two seeds (\texttt{123} and \texttt{7}). Results in
 Table~\ref{tab:mgsm} show that all four training conditions converge
-to within $\pm 0.5$\,pp of the untrained base mean
+to within $0.9$\,pp of the untrained base mean
 ($\base{}$ $47.3$\,\%; \armA{} $46.6$, \armB{} $47.4$, \armC{} $46.4$,
 \armD{} $47.5$). Per-language $\Delta$s remain within seed variance on
 every language. Training-language choice (English vs Vietnamese) does
@@ -527,7 +529,7 @@ $[+1.1, +11.1]$, excluding $0$).
 
 \armD{} \emph{does not} reproduce \armC{}'s AIME-2024 \texttt{maj@8}
 result. \armD{} itself is indistinguishable from base on this benchmark
-($\Delta = -1.08 \pm 5.07$\,pp; CI includes $0$): the constant-bias
+($\Delta = -1.1 \pm 5.1$\,pp; CI includes $0$): the constant-bias
 control does not move the model on the hardest benchmark. The
 mechanism behind $\R{5}$'s effect is therefore \emph{content-specific,
 not reward-magnitude-based}; the small fraction of training generations
@@ -559,7 +561,7 @@ MATH-500 ($\pm$ within seed variance) but does \emph{not} reproduce
 vs \armC{}~$=37.8 \pm 1.9$\,\%; $95\%$ CI $[+1.1, +11.1]$ on the
 difference, excludes $0$). \armD{} is statistically
 indistinguishable from base on this benchmark
-($\Delta = -1.08 \pm 5.07$\,pp; CI includes $0$). $\R{5}$'s
+($\Delta = -1.1 \pm 5.1$\,pp; CI includes $0$). $\R{5}$'s
 contribution is therefore content-specific, not a pure
 reward-magnitude perturbation. The most likely remaining source of
 content signal is the rare fraction of training generations where the
@@ -573,8 +575,8 @@ which we leave to future work.
 Practitioners might expect that training on Vietnamese-translated math
 would transfer to multilingual benchmarks. The MGSM 10-language
 evaluation in Section~\ref{sec:mgsm} refutes this hope: all four
-training conditions plus base converge to within $\pm 0.5$\,pp of each
-other on the 10-language mean. The GRPO recipe at sub-3\,B + LoRA
+training conditions plus base land within $0.9$\,pp of the untrained
+base mean (a $1.1$\,pp band, $46.4$--$47.5$\,\%) on the 10-language mean. The GRPO recipe at sub-3\,B + LoRA
 scale preserves but does not improve multilingual reasoning
 capability, regardless of training-language choice.
 
@@ -582,8 +584,8 @@ capability, regardless of training-language choice.
 For low-resource settings where English math data is abundant but the
 target is robustness rather than language coverage, our results suggest
 keeping the original English data and adding an auxiliary reward whose
-content relevance is secondary -- much cheaper than translating the
-training corpus -- as a low-cost regularization handle. The exact
+content relevance is secondary -- which avoids translating the
+training corpus -- as a simple regularization handle. The exact
 gradient mechanism behind this regularization is the natural follow-up
 question.
 
@@ -595,7 +597,7 @@ question.
 Each of \armA{}, \armB{}, \armC{}, and \armD{} reports three random
 seeds (\texttt{42, 123, 7}). The headline finding on AIME-2024
 \texttt{maj@8} ($\sigma{=}1.9$\,pp across three \armC{} seeds;
-$\sigma{=}5.07$\,pp across three \armD{} seeds) is robust under this
+$\sigma{=}5.1$\,pp across three \armD{} seeds) is robust under this
 sample size, and the $\armC{}{-}\armD{}$ contrast is supported by a
 $95\%$ bootstrap CI of $[+1.1, +11.1]$ that excludes $0$ (subject-level
 bootstrap over $10{,}000$ resamples). $n{=}3$ is the standard for sub-3\,B GRPO replication studies, but a larger
@@ -608,14 +610,16 @@ findings about \emph{relative} arm comparisons may interact with LoRA's
 limited update capacity in unknown ways. The apparent $22.5$\,pp
 ``gap'' to Open-RS-reported $80$\,\% AMC-23 dissolves under
 like-for-like \texttt{maj@4} comparison on Open-RS's own public
-checkpoint (see ``Evaluation pipeline gap'' below).
+checkpoint (see the metric-mismatch discussion below).
 
 \paragraph{\armB{} dataset is not a faithful translation of \armA{}.}
 \armB{} uses \path{5CD-AI/Vietnamese-MetaMathQA-40K-gg-translated}, a
 Google-translated MetaMathQA, not a translation of the same Open-RS
 subset used in \armA{}. Confounds between dataset content and
 language make Finding~2 a language-\emph{plus}-distribution effect
-rather than a clean language-only effect.\paragraph{Evaluation pipeline gap explained by metric mismatch.}
+rather than a clean language-only effect.
+
+\paragraph{Evaluation pipeline gap explained by metric mismatch.}
 Open-RS's reported $80$\,\% AMC-23 headline for the RS2 checkpoint is
 majority-vote (\texttt{maj@k}), not greedy \texttt{pass@1}. Evaluating
 the public \texttt{knoveleng/Open-RS2} checkpoint with our pipeline
@@ -629,7 +633,7 @@ temperature bug and reports \texttt{maj@4}=0.0. The original
 $12.9$\,pp gap was a metric-mismatch artifact, not a pipeline bug.
 
 See Appendix Table~\ref{tab:sources} for exact JSON file provenance and
-Appendix Section~A.4 for the complete bug history.
+Appendix~\ref{sec:maj4_bug} for the complete bug history.
 
 
 \paragraph{\texttt{maj@4} on AMC-23 -- bug found and fixed.}
@@ -663,7 +667,7 @@ variance ($\sigma{=}11.3$\,pp on AMC-23, $\sigma{=}7.7$\,pp on
 AIME-2024 \texttt{pass@1}) that exceeds the magnitude of its reported
 lift; single-seed claims at this scale are unreliable.
 \textbf{(iii)~Negative.} On 10-language MGSM, all training conditions
-converge to within $\pm 0.5$\,pp of the untrained base mean.
+converge to within $0.9$\,pp of the untrained base mean.
 Training-language choice does not produce cross-lingual transfer at
 this scale.
 A three-seed constant-bias ablation \armD{} \emph{fails} to reproduce
