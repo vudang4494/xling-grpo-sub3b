@@ -28,7 +28,7 @@ LoRA `r=16`** setting. Across **three seeds × four arms**, we find:
 - ⚠️ **Vanilla English GRPO (A1)** exhibits **σ = 11.3 pp** seed variance
   on AMC-23 — single-seed claims at this scale are unreliable.
 - ❌ **No cross-lingual transfer** on 10-language MGSM: all four arms
-  land within 0.9 pp of the untrained base mean (a 1.1 pp band).
+  land within 0.5 pp of the untrained base mean (a 0.7 pp band).
 - 🔬 The mechanism behind `R5` is **content-specific, not pure
   reward-magnitude**: a constant-bias control (A4) fails to reproduce A3's
   effect (CI [+1.1, +11.1] excludes 0).
@@ -71,9 +71,9 @@ greedy decoding (`T=0`, `max_tokens=8192`).
 ## Findings
 
 1. **A3 is best on the hardest benchmark (positive).** A3 achieves the
-   highest mean AIME-2024 `maj@8` (37.8 ± 1.9 %) and is the only arm with
-   a positive Δ over the untrained base (+4.4 pp), robust across three
-   seeds.
+   highest mean AIME-2024 `maj@8` (37.8 ± 1.9 %) and the largest
+   positive Δ over the untrained base (+4.5 pp; A2 also gains +1.1 pp),
+   robust across three seeds.
 2. **Vanilla English GRPO is unstable (methodological).** A1 exhibits
    σ = 11.3 pp seed variance on AMC-23 and consistently degrades
    AIME-2024 `pass@1` (mean −12.2 pp across 3/3 seeds), confirming that
@@ -84,8 +84,8 @@ greedy decoding (`T=0`, `max_tokens=8192`).
    transfer at this scale.
 
 A constant-bias ablation (`A4`) **fails to reproduce** A3's effect on
-AIME-2024 `maj@8` (A3 − A4 = +5.58 pp, 95 % bootstrap CI
-[+1.13, +11.10], excluding 0), demonstrating that `R5`'s contribution is
+AIME-2024 `maj@8` (A3 − A4 = +5.6 pp, 95 % bootstrap CI
+[+1.1, +11.1], excluding 0), demonstrating that `R5`'s contribution is
 **content-specific** rather than a pure reward-magnitude perturbation.
 
 See [`paper/main.pdf`](paper/main.pdf) for the full discussion, including

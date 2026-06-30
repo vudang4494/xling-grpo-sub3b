@@ -62,8 +62,8 @@ Base model: `deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B` (evaluated directly, no 
 
 **Key findings:**
 - **A3 achieves the best AIME-2024 maj@8** (37.8 ± 1.9%, +4.5 pp over base) — the largest positive Δ on the hardest benchmark (A2 also gains +1.1 pp).
-- **A3 − A4 = +5.58 pp** on AIME-2024 maj@8 (95% bootstrap CI [+1.13, +11.10]), confirming R5's contribution is **content-specific** (not pure reward-magnitude).
-- **No cross-lingual transfer**: all arms land within 0.9 pp of base (a 1.1 pp band) on the MGSM 10-language benchmark.
+- **A3 − A4 = +5.6 pp** on AIME-2024 maj@8 (95% bootstrap CI [+1.1, +11.1]), confirming R5's contribution is **content-specific** (not pure reward-magnitude).
+- **No cross-lingual transfer**: all arms land within 0.5 pp of base (a 0.7 pp band) on the MGSM 10-language benchmark.
 - **Vanilla EN GRPO (A1) is unstable**: σ = 11.3 pp on AMC-23 pass@1.
 
 All eval JSONs with full `responses[]` arrays are released in `results/eval/`.
