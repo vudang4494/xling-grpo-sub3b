@@ -147,17 +147,15 @@ resources. This paper supplies a multi-seed controlled study at that
 scale.
 
 \boxedclaim{%
-\textbf{Main claim.} Multi-seed evaluation reveals three orthogonal
-patterns. (i)~The language-consistency reward arm \armC{} achieves the
-highest mean AIME-2024 \texttt{maj@8} ($+4.5 \pm 1.9$\,pp over base across
-three seeds). (ii)~Vanilla English GRPO \armA{} exhibits
-$\sigma{=}11.3$\,pp seed variance on AMC-23 and consistently degrades
-AIME-2024 \texttt{pass@1} by $-12.2 \pm 7.7$\,pp. (iii)~On 10-language
-MGSM, all training conditions converge to within $0.5$\,pp of the
-untrained base. A three-seed constant-bias control \armD{} fails to
-reproduce \armC{}'s effect on AIME-2024 \texttt{maj@8}
-($\armC{}{-}\armD{}{=}{+}5.6$\,pp; $95\%$ subject-bootstrap CI
-$[+1.1, +11.1]$, excludes $0$), refuting a pure reward-magnitude explanation.}
+\textbf{Main claim.} Multi-seed evaluation at sub-3\,B${+}$LoRA scale
+reveals three orthogonal patterns: (i)~a language-consistency reward
+(\armC{}) yields the largest positive effect on the hardest benchmark
+(AIME-2024 \texttt{maj@8}, $+4.5 \pm 1.9$\,pp over base across three
+seeds); (ii)~vanilla English GRPO (\armA{}) is high-variance
+($\sigma{=}11.3$\,pp on AMC-23); and (iii)~no training condition
+produces cross-lingual transfer on 10-language MGSM. A constant-bias
+control (\armD{}) shows \armC{}'s effect is content-specific, not a
+pure reward-magnitude perturbation.}
 
 \paragraph{Why sub-3B and a single GPU?}
 Sub-3B reasoning models are the deployment frontier for resource-constrained
