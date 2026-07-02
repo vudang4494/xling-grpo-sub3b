@@ -5,7 +5,7 @@
 **Vu Dang** · Independent Researcher · [`vu.dh4494@gmail.com`](mailto:vu.dh4494@gmail.com) · ORCID [0009-0005-2344-1030](https://orcid.org/0009-0005-2344-1030)
 
 [![Paper](https://img.shields.io/badge/Paper-PDF-red.svg)](paper/main.pdf)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20061328.svg)](https://doi.org/10.5281/zenodo.20061328)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20061328.svg)](https://doi.org/10.5281/zenodo.20228756)
 [![tests](https://github.com/vudang4494/xling-grpo-sub3b/actions/workflows/test.yml/badge.svg)](https://github.com/vudang4494/xling-grpo-sub3b/actions/workflows/test.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Code License](https://img.shields.io/badge/Code-Apache--2.0-blue.svg)](LICENSE)
